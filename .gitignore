@@ -1,0 +1,45 @@
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.egg-info/
+*.egg
+*.log
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+*.dylib
+
+# --- Virtual Environments ---
+venv/
+.env/
+.env.bak/
+.venv/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_convert/
+
+# --- Build / Packaging ---
+build/
+dist/
+*.spec
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS / Misc ---
+.DS_Store
+Thumbs.db
+
+# --- Google Drive Sync Conflicts ---
+*conflicted copy*
+*.tmp
