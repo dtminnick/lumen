@@ -1,0 +1,75 @@
+
+site_name: Lumen Forecasting Engine
+site_description: Multiplicative trend + seasonality forecasting for hourly, daily, weekly, and monthly data.
+site_author: Donnie Minnick
+repo_url: https://github.com/dtminnick/lumen
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.code.annotate
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+extra_css:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js
+  - https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js
+  - js/katex-init.js
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed
+  - pymdownx.snippets
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quick Start: quick_start.md
+  - Concepts: 
+      - Overview: concepts_overview.md
+      - Trend: trend.md
+      - Seasonality: seasonality.md
+      - Forecast: forecast.md
+      - Plots: plots.md
+      - Multi-Series Forecasting: multi-series.md
+  - Diagnostics: 
+      - Overview: diagnostics_overview.md
+      - Residuals: residuals.md
+      - Error Metrics: error_metrics.md
+      - Anomalies: anomalies.md
+      - Continuity: continuity.md
+      - Strength Metrics: strength_metrics.md
+  - Architecture:
+      - Overview: architecture.md
+      - Data Configuration: data_config.md
+      - Data Loader: data_loader.md
+      - Series Decomposition: decomposition.md
+      - Forecast Engine: forecast_engine.md
+      - Export Engine: export.md
+      - Export Payload: export_payload.md
+      - Diagnostics Engine: diagnostics.md
+      - Plotter: plotter.md
+      - Lumen API: lumen_api.md
+      - Orchestrator: orchestrator.md
+      - Aggregator: aggregator.md
+      - Aggregator Factory: aggregator_factory.md
+  - Datasets: datasets.md
+  - FAQ: faq.md
