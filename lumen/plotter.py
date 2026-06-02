@@ -1,534 +1,333 @@
 
 # lumen/plotter.py
 
-"""
-Enhanced plotting utilities for Lumen.
+# lumen/plotter.py
 
-The :class:`Plotter` class provides a suite of visualization tools for
-decomposition, forecasting, and diagnostics. It supports:
-
-    * Actual vs trend vs fitted plots
-    * Seasonal cycle visualization
-    * Seasonal factors over time
-    * Residual diagnostics (distribution, z‑scores, anomalies)
-    * Continuity checks
-    * Error metrics
-    * Forecast vs actual
-    * Trend vs seasonal strength
-    * Variance contribution analysis
-
-Plots may optionally be saved to disk if a ``save_dir`` is provided.
-"""
-
-import matplotlib.pyplot as plt
-from pathlib import Path
+import altair as alt
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
 
 class Plotter:
 
-    """
-    Visualization helper for Lumen decomposition, forecasting, and diagnostics.
-
-    This class centralizes all plotting logic used across the Lumen pipeline.
-    It supports both interactive use (displaying plots) and batch export
-    (saving plots to a directory).
-
-    Parameters
-    ----------
-    save_dir : str or Path, optional
-        Directory where plots should be saved. If ``None``, plots are not saved.
-        If provided, the directory is created automatically.
-
-    Attributes
-    ----------
-    save_dir : Path or None
-        Directory where plots are written, or ``None`` if saving is disabled.
-    """
-
-    def __init__(self, save_dir=None):
-
-        """
-        Initialize the plotter.
-
-        Parameters
-        ----------
-        save_dir : str or Path, optional
-            Directory where plots should be saved. If omitted, plots are not
-            written to disk.
-
-        Notes
-        -----
-        * The directory is created automatically if it does not exist.
-        * All plots are saved using ``dpi=150`` for clarity.
-        """
-
+    def __init__(self, save_dir=None, width=12, height=6):
         self.save_dir = Path(save_dir) if save_dir else None
-
         if self.save_dir:
-
             self.save_dir.mkdir(parents=True, exist_ok=True)
 
-    def _save(self, filename):
+        # Altair uses pixels, not inches
+        self.width_px = int(width * 80)
+        self.height_px = int(height * 80)
 
-        """
-        Save the current Matplotlib figure to ``save_dir`` if saving is enabled.
-
-        Parameters
-        ----------
-        filename : str
-            Name of the file to write (e.g., ``"residuals.png"``).
-        """
-
+    def _save(self, chart, filename):
         if self.save_dir:
+            chart.save(str(self.save_dir / filename))
 
-            plt.savefig(self.save_dir / filename, dpi=150)
-
-    def _validate_series(self, series: pd.Series):
-
-        """
-        Ensure that a series is indexed by ``DatetimeIndex``.
-
-        Parameters
-        ----------
-        series : pd.Series
-            Series to validate.
-
-        Raises
-        ------
-        ValueError
-            If the index is not a ``DatetimeIndex``.
-        """
-
-        if not isinstance(series.index, pd.DatetimeIndex):
-
-            raise ValueError("Series must be indexed by DatetimeIndex.")
+    # ---------------- Decomposition ----------------
 
     def plot_decomposition(self, series, trend, fitted, filename="decomposition.png"):
-
-        """
-        Plot actual values, trend, and fitted values on a single chart.
-
-        Parameters
-        ----------
-        series : pd.Series
-            Original time series.
-
-        trend : pd.Series
-            Trend component.
-
-        fitted : pd.Series
-            Fitted values from decomposition.
-
-        filename : str, default "decomposition.png"
-            Output filename if saving is enabled.
-        """
-
-        self._validate_series(series)
-
-        plt.figure(figsize=(12, 6))
-
-        plt.plot(series.index, series.values, label="Actual", linewidth=2)
-
-        plt.plot(trend.index, trend.values, label="Trend", linewidth=2)
-
-        plt.plot(fitted.index, fitted.values, label="Fitted", linewidth=2)
-
-        plt.title("Decomposition: Actual vs Trend vs Fitted")
-
-        plt.legend()
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
-
-    def plot_seasonal_cycle(self, seasonal_cycle, filename="seasonal_cycle.png"):
-
-        """
-        Plot the seasonal cycle (one full seasonal period).
-
-        Parameters
-        ----------
-        seasonal_cycle : array-like
-            Seasonal factors for one full cycle.
-
-        filename : str, default "seasonal_cycle.png"
-            Output filename if saving is enabled.
-        """
-
-        plt.figure(figsize=(10, 4))
-
-        plt.plot(seasonal_cycle, marker="o")
-
-        plt.title("Seasonal Cycle")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
-
-    def plot_seasonal_factors_over_time(self, series, seasonal_factors_full, filename="seasonal_factors_over_time.png"):
-
-        """
-        Plot seasonal factors expanded across the full timeline.
-
-        Parameters
-        ----------
-        series : pd.Series
-            Original time series (used for index).
-
-        seasonal_factors_full : pd.Series
-            Seasonal factors aligned with the full timeline.
-
-        filename : str, default "seasonal_factors_over_time.png"
-            Output filename if saving is enabled.
-        """
-
-        self._validate_series(series)
-
-        plt.figure(figsize=(12, 4))
-
-        plt.plot(series.index, seasonal_factors_full.values, linewidth=2)
-
-        plt.title("Seasonal Factors Over Time")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
-
-    def plot_residuals(self, residuals, filename="residuals.png"):
-
-        """
-        Plot multiplicative residuals over time.
-
-        Parameters
-        ----------
-        residuals : pd.Series
-            Multiplicative residuals (``y / y_hat``).
-
-        filename : str, default "residuals.png"
-            Output filename if saving is enabled.
-        """
-
-        self._validate_series(residuals)
-
-        plt.figure(figsize=(12, 4))
-
-        plt.plot(residuals.index, residuals.values)
-
-        plt.axhline(1.0, color="black", linestyle="--")
-
-        plt.title("Residuals Over Time (Multiplicative)")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
-
-    def plot_residual_distribution(self, residuals, filename="residual_distribution.png"):
-
-        """
-        Plot a histogram of residual values.
-
-        Parameters
-        ----------
-        residuals : pd.Series
-            Multiplicative residuals.
-
-        filename : str, default "residual_distribution.png"
-            Output filename if saving is enabled.
-        """
-
-        plt.figure(figsize=(8, 4))
-
-        plt.hist(residuals.values, bins=30, edgecolor="black")
-
-        plt.title("Residual Distribution")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
-
-    def plot_residual_zscores(self, diagnostics, filename="residual_zscores.png"):
-
-        """
-        Plot z‑scores of residuals with anomaly thresholds.
-
-        Parameters
-        ----------
-        diagnostics : DiagnosticsEngine
-            Diagnostics object containing residuals and anomaly thresholds.
-
-        filename : str, default "residual_zscores.png"
-            Output filename if saving is enabled.
-        """
-
-        z = diagnostics.anomalies["z_score"] if diagnostics.anomalies is not None else None
-
-        r = diagnostics.residuals
-
-        plt.figure(figsize=(12, 4))
-
-        plt.plot(r.index, (r - r.mean()) / (r.std() + 1e-8), label="Z-score")
-
-        plt.axhline(diagnostics.config.residual_zscore_threshold, color="red", linestyle="--")
-
-        plt.axhline(-diagnostics.config.residual_zscore_threshold, color="red", linestyle="--")
-
-        plt.title("Residual Z-Scores")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
-
-    def plot_anomalies(self, diagnostics, filename="anomalies.png"):
-
-        """
-        Plot detected anomalies as red scatter points.
-
-        Parameters
-        ----------
-        diagnostics : DiagnosticsEngine
-            Diagnostics object containing anomaly DataFrame.
-
-        filename : str, default "anomalies.png"
-            Output filename if saving is enabled.
-        """
-
-        if diagnostics.anomalies is None or diagnostics.anomalies.empty:
-
-            return
-
-        plt.figure(figsize=(12, 4))
-
-        plt.scatter(
-            diagnostics.anomalies.index,
-            diagnostics.anomalies["residual"],
-            color="red",
-            label="Anomaly",
-            zorder=5
+        df = pd.DataFrame({
+            "date": series.index,
+            "Actual": np.asarray(series.values).ravel(),
+            "Trend": np.asarray(trend.values).ravel(),
+            "Fitted": np.asarray(fitted.values).ravel()
+        })
+
+        chart = (
+            alt.Chart(df)
+            .transform_fold(["Actual", "Trend", "Fitted"], as_=["Component", "Value"])
+            .mark_line()
+            .encode(
+                x=alt.X("date:T", title="Date"),
+                y=alt.Y("Value:Q", title="Value"),
+                color="Component:N"
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Decomposition: Actual vs Trend vs Fitted"
+            )
         )
 
-        plt.title("Detected Anomalies")
+        self._save(chart, filename)
+        return chart
 
-        plt.legend()
+    # ---------------- Seasonal ----------------
 
-        plt.tight_layout()
+    def plot_seasonal_cycle(self, seasonal_cycle, filename="seasonal_cycle.png"):
+        vals = np.asarray(seasonal_cycle).ravel()
+        df = pd.DataFrame({
+            "index": range(len(vals)),
+            "value": vals
+        })
 
-        self._save(filename)
+        chart = (
+            alt.Chart(df)
+            .mark_line(point=True)
+            .encode(
+                x=alt.X("index:Q", title="Seasonal Position"),
+                y=alt.Y("value:Q", title="Seasonal Factor")
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Seasonal Cycle"
+            )
+        )
 
-        plt.close()
+        self._save(chart, filename)
+        return chart
+
+    def plot_seasonal_factors_over_time(self, series, seasonal_factors_full, filename="seasonal_factors_over_time.png"):
+        df = pd.DataFrame({
+            "date": series.index,
+            "value": np.asarray(seasonal_factors_full.values).ravel()
+        })
+
+        chart = (
+            alt.Chart(df)
+            .mark_line()
+            .encode(
+                x="date:T",
+                y="value:Q"
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Seasonal Factors Over Time"
+            )
+        )
+
+        self._save(chart, filename)
+        return chart
+
+    # ---------------- Residuals ----------------
+
+    def plot_residuals(self, residuals, filename="residuals.png"):
+        df = pd.DataFrame({
+            "date": residuals.index,
+            "value": np.asarray(residuals.values).ravel()
+        })
+
+        chart = (
+            alt.Chart(df)
+            .mark_line()
+            .encode(
+                x="date:T",
+                y="value:Q"
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Residuals Over Time (Multiplicative)"
+            )
+        )
+
+        self._save(chart, filename)
+        return chart
+
+    def plot_residual_distribution(self, residuals, filename="residual_distribution.png"):
+        df = pd.DataFrame({"value": np.asarray(residuals.values).ravel()})
+
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(
+                x=alt.X("value:Q", bin=alt.Bin(maxbins=30)),
+                y="count()"
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Residual Distribution"
+            )
+        )
+
+        self._save(chart, filename)
+        return chart
+
+    def plot_residual_zscores(self, diagnostics, filename="residual_zscores.png"):
+        r = diagnostics.residuals
+        r_vals = np.asarray(r.values).ravel()
+        z = (r_vals - r_vals.mean()) / (r_vals.std() + 1e-8)
+
+        df = pd.DataFrame({"date": r.index, "z": z})
+        threshold = diagnostics.config.residual_zscore_threshold
+
+        chart = (
+            alt.Chart(df)
+            .mark_line()
+            .encode(x="date:T", y="z:Q")
+            .properties(width=self.width_px, height=self.height_px)
+        )
+
+        rule = alt.Chart(
+            pd.DataFrame({"y": [threshold, -threshold]})
+        ).mark_rule(color="red").encode(y="y:Q")
+
+        final = (chart + rule).properties(title="Residual Z-Scores")
+
+        self._save(final, filename)
+        return final
+
+    def plot_anomalies(self, diagnostics, filename="anomalies.png"):
+        if diagnostics.anomalies is None or diagnostics.anomalies.empty:
+            return None
+
+        df = diagnostics.anomalies.reset_index().rename(columns={"index": "date"})
+
+        chart = (
+            alt.Chart(df)
+            .mark_circle(color="red", size=60)
+            .encode(
+                x="date:T",
+                y="residual:Q"
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Detected Anomalies"
+            )
+        )
+
+        self._save(chart, filename)
+        return chart
+
+    # ---------------- Continuity & errors ----------------
 
     def plot_continuity(self, diagnostics, filename="continuity.png"):
-
-        """
-        Visualize continuity between the last historical point and first forecast.
-
-        Parameters
-        ----------
-        diagnostics : DiagnosticsEngine
-            Contains continuity report with ``last_history`` and ``first_forecast``.
-
-        filename : str, default "continuity.png"
-            Output filename if saving is enabled.
-        """
-
         report = diagnostics.continuity_report
-
         if not report:
+            return None
 
-            return
+        df = pd.DataFrame({
+            "label": ["Last History", "First Forecast"],
+            "value": [report["last_history"], report["first_forecast"]]
+        })
 
-        last_hist = report["last_history"]
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(x="label:N", y="value:Q")
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Continuity Check"
+            )
+        )
 
-        first_fc = report["first_forecast"]
-
-        plt.figure(figsize=(6, 4))
-
-        plt.bar(["Last History", "First Forecast"], [last_hist, first_fc])
-
-        plt.title("Continuity Check")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
+        self._save(chart, filename)
+        return chart
 
     def plot_error_metrics(self, diagnostics, filename="error_metrics.png"):
-
-        """
-        Plot error metrics (MAE, RMSE, MAPE, SMAPE) as a bar chart.
-
-        Parameters
-        ----------
-        diagnostics : DiagnosticsEngine
-            Contains computed error metrics.
-
-        filename : str, default "error_metrics.png"
-            Output filename if saving is enabled.
-        """
-
         metrics = diagnostics.error_metrics
 
-        plt.figure(figsize=(6, 4))
+        df = pd.DataFrame({
+            "metric": list(metrics.keys()),
+            "value": list(metrics.values())
+        })
 
-        plt.bar(metrics.keys(), metrics.values())
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(x="metric:N", y="value:Q")
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Error Metrics"
+            )
+        )
 
-        plt.title("Error Metrics")
+        self._save(chart, filename)
+        return chart
 
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
+    # ---------------- Forecast vs actual ----------------
 
     def plot_forecast_vs_actual(self, history, forecast, future_index, filename="forecast_vs_actual.png"):
+        hist_vals = np.asarray(history.values).ravel()
+        fc_vals = np.asarray(forecast).ravel()
 
-        """
-        Plot historical values and forecasted values on a single chart.
+        df_hist = pd.DataFrame({"date": history.index, "value": hist_vals, "type": "Actual"})
+        df_fc = pd.DataFrame({"date": future_index, "value": fc_vals, "type": "Forecast"})
+        df = pd.concat([df_hist, df_fc])
 
-        Parameters
-        ----------
-        history : pd.Series
-            Historical time series.
+        chart = (
+            alt.Chart(df)
+            .mark_line()
+            .encode(
+                x="date:T",
+                y="value:Q",
+                color="type:N"
+            )
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Forecast vs Actual"
+            )
+        )
 
-        forecast : array-like
-            Forecasted values.
+        self._save(chart, filename)
+        return chart
 
-        future_index : pd.DatetimeIndex
-            Index corresponding to forecast horizon.
-
-        filename : str, default "forecast_vs_actual.png"
-            Output filename if saving is enabled.
-        """
-
-        self._validate_series(history)
-
-        plt.figure(figsize=(12, 5))
-
-        plt.plot(history.index, history.values, label="Actual", linewidth=2)
-
-        plt.plot(future_index, forecast, label="Forecast", linewidth=2)
-
-        plt.title("Forecast vs Actual")
-
-        plt.legend()
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
+    # ---------------- Strength & variance ----------------
 
     def plot_strength_bars(self, diagnostics, filename="strength_bars.png"):
-
-        """
-        Plot trend strength and seasonal strength as a bar chart.
-
-        Parameters
-        ----------
-        diagnostics : DiagnosticsEngine
-            Contains ``trend_strength`` and ``seasonal_strength``.
-
-        filename : str, default "strength_bars.png"
-            Output filename if saving is enabled.
-        """
-
         if diagnostics is None:
+            return None
 
-            return
+        df = pd.DataFrame({
+            "component": ["Trend Strength", "Seasonal Strength"],
+            "value": [diagnostics.trend_strength, diagnostics.seasonal_strength]
+        })
 
-        strengths = {
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(x="component:N", y="value:Q")
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Trend vs Seasonal Strength"
+            )
+        )
 
-            "Trend Strength": diagnostics.trend_strength,
-
-            "Seasonal Strength": diagnostics.seasonal_strength
-
-        }
-
-        plt.figure(figsize=(6, 4))
-
-        plt.bar(strengths.keys(), strengths.values(), color=["#4C72B0", "#55A868"])
-        
-        plt.ylim(0, 1)
-
-        plt.title("Trend vs Seasonal Strength")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
+        self._save(chart, filename)
+        return chart
 
     def plot_variance_contributions(self, diagnostics, filename="variance_contributions.png"):
-
-        """
-        Plot variance contributions of trend, seasonality, and residuals.
-
-        Parameters
-        ----------
-        diagnostics : DiagnosticsEngine
-            Provides history, fitted values, trend, and seasonal factors.
-
-        filename : str, default "variance_contributions.png"
-            Output filename if saving is enabled.
-
-        Notes
-        -----
-        Variance is computed in additive space, consistent with Hyndman's
-        definitions of component strength.
-        """
-
         if diagnostics is None:
+            return None
 
-            return
+        E_add = np.asarray(diagnostics.history.values).ravel() - np.asarray(diagnostics.fitted.values).ravel()
+        S_add = np.asarray(diagnostics.trend.values).ravel() * (np.asarray(diagnostics.seasonal_full.values).ravel() - 1)
+        T_vals = np.asarray(diagnostics.trend.values).ravel()
+        T_add = T_vals - T_vals.mean()
 
-        # Additive residuals
+        df = pd.DataFrame({
+            "component": ["Trend", "Seasonality", "Residual"],
+            "value": [
+                np.var(T_add, ddof=1),
+                np.var(S_add, ddof=1),
+                np.var(E_add, ddof=1)
+            ]
+        })
 
-        E_add = diagnostics.history.values - diagnostics.fitted.values
+        chart = (
+            alt.Chart(df)
+            .mark_bar()
+            .encode(x="component:N", y="value:Q")
+            .properties(
+                width=self.width_px,
+                height=self.height_px,
+                title="Variance Contributions"
+            )
+        )
 
-        # Additive seasonal effect
+        self._save(chart, filename)
+        return chart
 
-        S_add = diagnostics.trend.values * (diagnostics.seasonal_full.values - 1)
-
-        # Additive trend deviation
-
-        T_add = diagnostics.trend.values - diagnostics.trend.values.mean()
-
-        var_e = np.var(E_add, ddof=1)
-
-        var_s = np.var(S_add, ddof=1)
-
-        var_t = np.var(T_add, ddof=1)
-
-        contributions = {
-            "Trend": var_t,
-            "Seasonality": var_s,
-            "Residual": var_e
-        }
-
-        plt.figure(figsize=(7, 4))
-
-        plt.bar(contributions.keys(), contributions.values(), color=["#4C72B0", "#55A868", "#C44E52"])
-
-        plt.title("Variance Contributions")
-
-        plt.tight_layout()
-
-        self._save(filename)
-
-        plt.close()
+    # ---------------- Orchestrator ----------------
 
     def plot_all(
         self, 
@@ -537,66 +336,25 @@ class Plotter:
         forecast=None, 
         future_index=None, 
         diagnostics=None,
-        prefix = None
+        prefix=None
     ):
-
-        """
-        Generate a full suite of decomposition, diagnostic, and forecast plots.
-
-        Parameters
-        ----------
-        series : pd.Series
-            Historical time series.
-
-        model : SeriesDecomposition
-            Fitted decomposition model.
-
-        forecast : pd.Series or None
-            Forecasted values.
-
-        future_index : pd.DatetimeIndex or None
-            Index for forecast horizon.
-
-        diagnostics : DiagnosticsEngine or None
-            Diagnostics object for residuals, anomalies, strengths, etc.
-
-        prefix : str
-            A string prepended to every filename (e.g., "RMD", "TRM", "INS").
-
-        Notes
-        -----
-        Plots are saved with numbered filenames to ensure ordering.
-        """
-
-        # Ensure prefix ends with underscore if provided
-
         prefix = f"{prefix}_" if prefix else ""
 
-        self.plot_decomposition(series, model.trend_, model.fitted_, f"{prefix}_01_decomposition.png")
+        self.plot_decomposition(series, model.trend_, model.fitted_, f"{prefix}01_decomposition.png")
+        self.plot_seasonal_cycle(model.seasonal_factors, f"{prefix}02_seasonal_cycle.png")
+        self.plot_seasonal_factors_over_time(series, model.seasonal_factors_, f"{prefix}03_seasonal_factors_over_time.png")
 
-        self.plot_seasonal_cycle(model.seasonal_factors, f"{prefix}_02_seasonal_cycle.png")
-
-        self.plot_seasonal_factors_over_time(series, model.seasonal_factors_, f"{prefix}_03_seasonal_factors_over_time.png")
-
-        # Residual diagnostics
-
-        self.plot_residuals(model.residual_, f"{prefix}_04_residuals.png")
-
-        self.plot_residual_distribution(model.residual_, f"{prefix}_05_residual_distribution.png")
+        self.plot_residuals(model.residual_, f"{prefix}04_residuals.png")
+        self.plot_residual_distribution(model.residual_, f"{prefix}05_residual_distribution.png")
 
         if diagnostics is not None:
-            self.plot_residual_zscores(diagnostics, f"{prefix}_06_residual_zscores.png")
-
-            self.plot_anomalies(diagnostics, f"{prefix}_07_anomalies.png")
-
-            self.plot_continuity(diagnostics, f"{prefix}_08_continuity.png")
-
-            self.plot_error_metrics(diagnostics, f"{prefix}_09_error_metrics.png")
+            self.plot_residual_zscores(diagnostics, f"{prefix}06_residual_zscores.png")
+            self.plot_anomalies(diagnostics, f"{prefix}07_anomalies.png")
+            self.plot_continuity(diagnostics, f"{prefix}08_continuity.png")
+            self.plot_error_metrics(diagnostics, f"{prefix}09_error_metrics.png")
 
         if forecast is not None and future_index is not None:
+            self.plot_forecast_vs_actual(series, forecast, future_index, f"{prefix}10_forecast_vs_actual.png")
 
-            self.plot_forecast_vs_actual(series, forecast, future_index, f"{prefix}_10_forecast_vs_actual.png")
-
-        self.plot_strength_bars(diagnostics, f"{prefix}_11_strength_bars.png")
-
-        self.plot_variance_contributions(diagnostics, f"{prefix}_12_variance_contributions.png")
+        self.plot_strength_bars(diagnostics, f"{prefix}11_strength_bars.png")
+        self.plot_variance_contributions(diagnostics, f"{prefix}12_variance_contributions.png")

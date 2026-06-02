@@ -9,16 +9,16 @@ from lumen.plotter import Plotter
 
 config = DataConfig(
     date_col="Month",
-    value_col="Value"
+    value_col="Paper"
 )
 
 lumen = Lumen(data_config=config)
 
-plotter = Plotter(save_dir="data/outputs/rmd/")
+plotter = Plotter(save_dir="data/outputs/inservice/plots/")
 
 # Load data.
 
-lumen.load_file("data/inputs/sample_input_data_rmd.xlsx")
+lumen.load_file("data/inputs/In-Service Transactions.xlsx")
 
 # Decompose.
 
@@ -46,4 +46,4 @@ print("\n")
 
 # Export.
 
-lumen.export("data/outputs/rmd/lumen_export_rmd.xlsx")
+lumen.export("data/outputs/inservice/In-Service Forecast Export.xlsx")
