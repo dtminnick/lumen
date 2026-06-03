@@ -39,7 +39,7 @@ class Plotter:
             .transform_fold(["Actual", "Trend", "Fitted"], as_=["Component", "Value"])
             .mark_line()
             .encode(
-                x=alt.X("date:T", title="Date"),
+                x=alt.X("date:T", title="Date", axis=alt.Axis(format="%Y-%m", labelAngle=270)),
                 y=alt.Y("Value:Q", title="Value"),
                 color="Component:N"
             )
@@ -89,8 +89,8 @@ class Plotter:
             alt.Chart(df)
             .mark_line()
             .encode(
-                x="date:T",
-                y="value:Q"
+                x=alt.X("date:T", title="Date", axis=alt.Axis(format="%Y-%m", labelAngle=270)),
+                y=alt.Y("value:Q", title = "Value")
             )
             .properties(
                 width=self.width_px,
@@ -114,8 +114,8 @@ class Plotter:
             alt.Chart(df)
             .mark_line()
             .encode(
-                x="date:T",
-                y="value:Q"
+                x=alt.X("date:T", title="Date", axis=alt.Axis(format="%Y-%m", labelAngle=270)),
+                y=alt.Y("value:Q", title = "Value")
             )
             .properties(
                 width=self.width_px,
@@ -134,8 +134,8 @@ class Plotter:
             alt.Chart(df)
             .mark_bar()
             .encode(
-                x=alt.X("value:Q", bin=alt.Bin(maxbins=30)),
-                y="count()"
+                x=alt.X("value:Q", bin=alt.Bin(maxbins=30), title = "Value (Binned)"),
+                y=alt.Y("count()", title = "Count")
             )
             .properties(
                 width=self.width_px,
@@ -158,7 +158,8 @@ class Plotter:
         chart = (
             alt.Chart(df)
             .mark_line()
-            .encode(x="date:T", y="z:Q")
+            .encode(x=alt.X("date:T", title="Date", axis=alt.Axis(format="%Y-%m", labelAngle=270)), 
+                    y=alt.Y("z:Q", title = "Value"))
             .properties(width=self.width_px, height=self.height_px)
         )
 
@@ -181,8 +182,8 @@ class Plotter:
             alt.Chart(df)
             .mark_circle(color="red", size=60)
             .encode(
-                x="date:T",
-                y="residual:Q"
+                x=alt.X("date:T", title="Date", axis=alt.Axis(format="%Y-%m", labelAngle=270)),
+                y=alt.Y("residual:Q", title = "Value")
             )
             .properties(
                 width=self.width_px,
@@ -206,19 +207,41 @@ class Plotter:
             "value": [report["last_history"], report["first_forecast"]]
         })
 
-        chart = (
+        bars = (
             alt.Chart(df)
             .mark_bar()
-            .encode(x="label:N", y="value:Q")
-            .properties(
-                width=self.width_px,
-                height=self.height_px,
-                title="Continuity Check"
+            .encode(
+                x="label:N",
+                y="value:Q"
             )
         )
 
-        self._save(chart, filename)
-        return chart
+        labels = (
+            alt.Chart(df)
+            .mark_text(
+                align="center",
+                baseline="middle",
+                dy=-10,          # move text upward inside the bar
+                color="white",   # white text reads well inside bars
+                fontSize=12
+            )
+            .encode(
+                x="label:N",
+                y="value:Q",
+                text=alt.Text("value:Q", format=".2f")
+            )
+        )
+
+        final = (bars + labels).properties(
+            width=self.width_px,
+            height=self.height_px,
+            title="Continuity Check"
+        )
+
+        self._save(final, filename)
+        
+        return final
+
 
     def plot_error_metrics(self, diagnostics, filename="error_metrics.png"):
         metrics = diagnostics.error_metrics
@@ -256,8 +279,8 @@ class Plotter:
             alt.Chart(df)
             .mark_line()
             .encode(
-                x="date:T",
-                y="value:Q",
+                x=alt.X("date:T", title="Date", axis=alt.Axis(format="%Y-%m", labelAngle=270)),
+                y=alt.Y("value:Q", title = "Value"),
                 color="type:N"
             )
             .properties(
@@ -284,7 +307,8 @@ class Plotter:
         chart = (
             alt.Chart(df)
             .mark_bar()
-            .encode(x="component:N", y="value:Q")
+            .encode(x="component:N", 
+                    y=alt.Y("value:Q", title = "Value"))
             .properties(
                 width=self.width_px,
                 height=self.height_px,
@@ -316,7 +340,8 @@ class Plotter:
         chart = (
             alt.Chart(df)
             .mark_bar()
-            .encode(x="component:N", y="value:Q")
+            .encode(x="component:N",
+                    y=alt.Y("value:Q", title = "Value"))
             .properties(
                 width=self.width_px,
                 height=self.height_px,
