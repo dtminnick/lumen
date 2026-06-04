@@ -1,18 +1,15 @@
 
-# lumen/diagnostics_engine.py
-
 """
 Diagnostics for Lumen decomposition and forecasting.
 
-The :class:`DiagnosticsEngine` computes a comprehensive suite of diagnostic
+The class `DiagnosticsEngine` computes a comprehensive suite of diagnostic
 statistics for a Lumen model, including:
 
-* Residuals (multiplicative + percent residuals)
-* Error metrics (MAE, RMSE, MAPE, SMAPE)
-* Continuity between history and forecast
-* Anomaly detection using z‑scores
-* Trend strength (Hyndman definition)
-* Seasonal strength (Hyndman definition)
+* Residuals (multiplicative + percent residuals),
+* Error metrics (MAE, RMSE, MAPE, SMAPE),
+* Continuity between history and forecast,
+* Anomaly detection using z-scores, and
+* Trend and seasonal strength (Hyndman definition).
 
 These diagnostics help evaluate model fit, detect structural issues, and
 quantify the contribution of trend and seasonality.
@@ -30,20 +27,23 @@ class DiagnosticsConfig:
 
     Parameters
     ----------
-    continuity_threshold : float, default 0.10
-        Maximum allowed relative jump between the last historical value and
-        the first forecast value before continuity is considered broken.
+    **continuity_threshold : float, default 0.10**
 
-    residual_zscore_threshold : float, default 3.0
-        Z-score threshold for anomaly detection.
+    Maximum allowed relative jump between the last historical value and
+    the first forecast value before continuity is considered broken.
 
-    eps : float, default 1e-8
-        Small constant added to denominators to avoid division by zero.
+    **residual_zscore_threshold : float, default 3.0**
+
+    Z-score threshold for anomaly detection.
+
+    **eps : float, default 1e-8**
+    
+    Small constant added to denominators to avoid division by zero.
     
     Notes
     -----
     This configuration object is lightweight and does not validate values.
-    Validation occurs inside :class:`DiagnosticsEngine`.
+    Validation occurs inside class `DiagnosticsEngine`.
     
     """
 
@@ -64,46 +64,59 @@ class DiagnosticsEngine:
 
     Parameters
     ----------
-    history : pd.Series
-        Original observed time series.
+    **history : pd.Series**
+    
+    Original observed time series.
 
-    fitted : pd.Series
-        Fitted values from STL decomposition.
+    **fitted : pd.Series**
 
-    forecast : pd.Series or None
-        Forecasted values.  May be ``None`` for decomposition-only workflows.
+    Fitted values from STL decomposition.
 
-    trend : pd.Series
-        Trend component from STL.
+    **forecast : pd.Series or None**
+    
+    Forecasted values.  May be `None` for decomposition-only workflows.
 
-    seasonal_full : pd.Series
-        Seasonal component expanded across the full timeline.
+    **trend : pd.Series**
+    
+    Trend component from STL.
 
-    config : DiagnosticsConfig, optional
-        Configuration for thresholds and numerical stability.
+    **seasonal_full : pd.Series**
+
+    Seasonal component expanded across the full timeline.
+
+    **config : DiagnosticsConfig, optional**
+    
+    Configuration for thresholds and numerical stability.
 
     Attributes
     ----------
-    residuals : pd.Series or None
-        Multiplicative residuals ``y / y_hat``.
+    **residuals : pd.Series or None**
+    
+    Multiplicative residuals `y / y_hat`.
 
-    percent_residuals : pd.Series or None
-        Percent residuals ``residuals - ``.
+    **percent_residuals : pd.Series or None**
 
-    error_metrics : dict
-        Dictionary containing MAE, RMSE, MAPE, SMAPE.
+    Percent residuals.
 
-    continuity_report : dict
-        Summary of continuity between history and forecast.
+    **error_metrics : dict**
+        
+    Dictionary containing MAE, RMSE, MAPE, SMAPE.
 
-    anomalies : pd.DataFrame or None
-        Rows flagged as anomalies based on z-score threshold.
+    **continuity_report : dict**
 
-    trend_strength : float or None
-        Hyndman trend strength metric.
+    Summary of continuity between history and forecast.
 
-    seasonal_strength : float or None.
-        Hyndman seasonal strength metric.
+    **anomalies : pd.DataFrame or None**
+
+    Rows flagged as anomalies based on z-score threshold.
+
+    **trend_strength : float or None**
+
+    Hyndman trend strength metric.
+
+    **seasonal_strength : float or None**
+
+    Hyndman seasonal strength metric.
     """
 
     def __init__(
@@ -125,38 +138,46 @@ class DiagnosticsEngine:
 
         Parameters
         ----------
-        history : pd.Series
-            Original observed time series. Must be indexed by datetime and aligned
-            with the fitted values. Values are coerced to float.
+        **history : pd.Series**
 
-        fitted : pd.Series
-            Fitted values from the STL decomposition. Must share the same index as
-            ``history``. Values are coerced to float.
+        Original observed time series. Must be indexed by datetime and aligned
+        with the fitted values. Values are coerced to float.
 
-        forecast : pd.Series or None
-            Forecasted values extending beyond the historical index. May be ``None``
-            for decomposition‑only workflows. If provided, values are coerced to float.
+        **fitted : pd.Series**
 
-        trend : pd.Series
-            Trend component from STL decomposition. Must be aligned with ``history``.
-            Values are coerced to float.
+        Fitted values from the STL decomposition. Must share the same index as
+        `history`. Values are coerced to float.
 
-        seasonal_full : pd.Series
-            Seasonal component expanded across the full timeline (history + forecast).
-            Must be multiplicative seasonal factors (e.g., 1.12, 0.94). Values are
-            coerced to float.
+        **forecast : pd.Series or None**
+        
+        Forecasted values extending beyond the historical index. May be `None`
+        for decomposition-only workflows. If provided, values are coerced to float.
 
-        config : DiagnosticsConfig, optional
-            Configuration controlling continuity thresholds, anomaly z‑score
-            thresholds, and numerical stability constants.
+        **trend : pd.Series**
+        
+        Trend component from STL decomposition. Must be aligned with `history`.
+        Values are coerced to float.
+
+        **seasonal_full : pd.Series**
+
+        Seasonal component expanded across the full timeline (history + forecast).
+        Must be multiplicative seasonal factors (e.g., 1.12, 0.94). Values are
+        coerced to float.
+
+        **config : DiagnosticsConfig, optional**
+
+        Configuration controlling continuity thresholds, anomaly z-score
+        thresholds, and numerical stability constants.
 
         Notes
         -----
-        * All inputs are converted to float to ensure numerical consistency.
-        * Residuals are computed multiplicatively (``y / y_hat``), but strength
+        All inputs are converted to float to ensure numerical consistency.
+        
+        Residuals are computed multiplicatively (`y / y_hat`), but strength
         metrics convert components to additive form following Hyndman's definitions.
-        * No diagnostics are computed during initialization — call
-        :meth:`compute_all` to populate residuals, metrics, anomalies, and strengths.
+        
+        No diagnostics are computed during initialization; call `compute_all` to 
+        populate residuals, metrics, anomalies, and strengths.
         """
 
         self.history = history.astype(float)
@@ -195,11 +216,12 @@ class DiagnosticsEngine:
         Compute all diagnostics in the correct order.
 
         This method runs:
-            * Residuals
-            * Error metrics
-            * Continuity check
-            * Anomaly detection
-            * Trend and seasonal strength
+
+        * Residuals,
+        * Error metrics,
+        * Continuity check,
+        * Anomaly detection, and
+        * Trend and seasonal strength.
 
         Notes
         -----
@@ -220,10 +242,12 @@ class DiagnosticsEngine:
         Compute multiplicative residuals and percent residuals.
 
         Residual definition:
-            residual = y / (y_hat * eps)
+
+        residual = y / (y_hat * eps)
 
         Percent residual:
-            percent_residual = residual - 1
+
+        percent_residual = residual - 1
 
         Notes
         -----
@@ -255,7 +279,7 @@ class DiagnosticsEngine:
         Notes
         -----
         Although the residuals are multiplicative, error metrics are computed
-        using additive residuals ``y - y_hat`` for interpretability.
+        using additive residuals `y - y_hat` for interpretability.
         """
 
         if self.residuals is None:
@@ -302,9 +326,9 @@ class DiagnosticsEngine:
         
         A relative jump is computed as:
 
-            rel_jump = (forecast[0] - history[-1]) / abs(history[-1])
+        rel_jump = (forecast[0] - history[-1]) / abs(history[-1])
 
-        If the jump exceeds ``continuity_threshold``, continuity is considered
+        If the jump exceeds `continuity_threshold`, continuity is considered
         broken.
 
         Notes
@@ -356,16 +380,14 @@ class DiagnosticsEngine:
 
         A point is considered anomalous if:
 
-            |z| >= residual_zscore_threshold
+        |z| >= residual_zscore_threshold
 
-        where:
-
-            z = (residual - mean) / std
+        where z = (residual - mean) / std.
 
         Returns
         -------
         None
-            Results stored in :attr:`anomalies` as a DataFrame.
+            Results stored in attribute `anomalies` as a DataFrame.
         """
 
         if self.residuals is None:
@@ -401,13 +423,15 @@ class DiagnosticsEngine:
 
         Strength definitions (additive form):
 
-            seasonal_strength = 1 - Var(E) / Var(E + S)
-            trend_strength = 1 - Var(E) / Var(E + T)
+        seasonal_strength = 1 - Var(E) / Var(E + S)
+
+        trend_strength = 1 - Var(E) / Var(E + T)
 
         where:
-            * E = additive residuals
-            * S = additive seasonal component
-            * T = additive trend component
+
+        * E = additive residuals
+        * S = additive seasonal component
+        * T = additive trend component
 
         Notes
         -----
@@ -474,8 +498,9 @@ class DiagnosticsEngine:
 
         Returns
         -------
-        pd.DataFrame
-            Residual diagnostics aligned on the residual index.
+        **pd.DataFrame**
+
+        Residual diagnostics aligned on the residual index.
         """
 
         return pd.DataFrame({
@@ -492,13 +517,15 @@ class DiagnosticsEngine:
 
         Returns
         -------
-        pd.DataFrame
-            Table containing:
-                * Error metrics
-                * Continuity report
-                * Anomaly count
-                * Trend strength
-                * Seasonal strength
+        **pd.DataFrame**
+
+        Table containing:
+
+        * Error metrics,
+        * Continuity report,
+        * Anomaly count,
+        * Trend strength, and
+        * Seasonal strength.
         """
         
         rows = []

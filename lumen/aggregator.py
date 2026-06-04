@@ -1,24 +1,20 @@
 
-# lumen/aggregator.py
-
 """
-Core aggregation interfaces and base implementations for Lumen.
+Provides core aggregation interfaces and base implementations for Lumen.
 
-This module defines the abstract :class:`Aggregator` interface, the
-:class:`AggregationResult` container, and the built-in
-:class:`BottomUpAggregator` strategy.
+This module defines the abstract class `Aggregator` interface, the class `AggregationResult` 
+container, and the built-in class `BottomUpAggregator` strategy.
 
 Aggregation strategies are responsible for combining multiple forecast or
-historical time series into a single aggregate output.  They are used by the
-:Orchestrator to support multi-series forecasting workflows.
+historical time series into a single aggregated output.  They are used by the
+`Orchestrator` to support multi-series forecasting workflows.
 
-The module currently includes:
-    * :class:`AggregationResult` - Standardized output container.
-    * :class:`Aggregator` - Abstract base class for all strategies.
-    * :class:`BottomUpAggregator` - Sums component series to produce totals.
+The module currently includes class `AggregationResult`, a standardized output container, 
+class `Aggregator`, an abstract base class for all strategies, and class `BottomUpAggregator`,
+which sums component series to produce totals.
 
 Additional strategies (e.g. top-down constant, top_dowm_periodic) can be
-registered via :class:`AggregatorFactory`.
+registered via  class `AggregatorFactory`.
 """
 
 from abc import ABC, abstractmethod
@@ -30,42 +26,43 @@ import numpy as np
 class AggregationResult:
 
     """
-    Container for aggregated outputs.
+    Provides a container for aggregated outputs.
 
     This class standardizes the return value of all aggregation strategies.
-    It holds:
-        * The aggregated total series or DataFrame.
-        * The individual component series used in the aggregation.
-        * Arbitrary metadata describing the aggregation process.
+    It holds the aggregated total series or DataFrame, the individual component 
+    series used in the aggregation, and metadata describing the aggregation process.
 
     Parameters
     ----------
-    aggregated : pd.DataFrame | pd.Series | None
-        The final aggregated output produced by the strategy.  For bottom-up
-        aggregation, this is typically the sum of all component forecasts.
+    **aggregated : pd.DataFrame | pd.Series | None**
+    
+    The final aggregated output produced by the strategy.  For bottom-up
+    aggregation, this is typically the sum of all component forecasts.
 
-    components : dict[str, pd.DataFrame | pd.Series], optional
-        Mapping of component names to their aligned Series/DataFrames.
-        Defaults to an empty dictionary.
+    **components : dict[str, pd.DataFrame | pd.Series], optional**
+    
+    Mapping of component names to their aligned Series/DataFrames, defaults 
+    to an empty dictionary.
 
-    metadata : dict[str, Any], optional
-        Additional information produced by the aggregator, such as:
-            * strategy name
-            * aligned histories
-            * aggregated history
-            * combined history + forecast frame
-        Defaults to an empty dictionary.
+    **metadata : dict[str, Any], optional**
+
+    Additional information produced by the aggregator, such as strategy name, 
+    aligned histories, aggregated history, and combined history + forecast frame, 
+    defaults to an empty dictionary.
 
     Attributes
     ----------
-    aggregated : pd.DataFrame | pd.Series | None
-        The aggregated output.
+    **aggregated : pd.DataFrame | pd.Series | None**
 
-    components : dict[str, pd.DataFrame | pd.Series]
-        The aligned component series.
+    The aggregated output.
 
-    metadata : dict[str, Any]
-        Arbitrary metadata describing the aggregation process.
+    **components : dict[str, pd.DataFrame | pd.Series]**
+
+    The aligned component series.
+
+    **metadata : dict[str, Any]**
+
+    Arbitrary metadata describing the aggregation process.
 
     Notes
     -----
@@ -81,6 +78,28 @@ class AggregationResult:
         metadata: Dict[str, Any] | None = None,
     ):
         
+        """
+        Container for the outputs of an aggregation step.
+
+        Parameters
+        ----------
+        **aggregated : pd.DataFrame | pd.Series | None**
+        
+        The aggregated series or DataFrame produced by the aggregation strategy. For 
+        single-series workflows this is typically `None`.
+        
+        **components : dict[str, pd.DataFrame | pd.Series], optional**
+
+        The individual component series that were combined to form the
+        aggregated output. Keys are component names. Defaults to an empty
+        dictionary.
+        
+        **metadata : dict[str, Any], optional**
+
+        Additional information about the aggregation process, such as the
+        strategy used or aligned histories. Defaults to an empty dictionary.
+        """
+        
         self.aggregated = aggregated
 
         self.components = components or {}
@@ -92,14 +111,11 @@ class Aggregator(ABC):
     """
     Abstract base class for all aggregation strategies.
 
-    Aggregators define a single required method, :meth:`aggregate`, which
-    accepts strategy-specific keyword arguments and returns an
-    :class:`AggregationResult`.
+    Aggregators define a single required method, `aggregate`, which
+    accepts strategy-specific keyword arguments and returns a class `AggregationResult`.
 
-    Subclasses implement different aggregation philosophies, such as:
-        * Bottom-up summation
-        * Top-down constant proportion allocation
-        * Top-down period-varying allocation
+    Subclasses implement different aggregation philosophies, such as bottom-up summation, 
+    top-down constant proportion allocation, and top-down period-varying allocation
     
     Notes
     -----
@@ -115,17 +131,20 @@ class Aggregator(ABC):
 
         Parameters
         ----------
-        **kwargs :
-            Strategy-specific inputs.  For example:
-                * ``forecasts`` : dict[str, Series/DataFrame]
-                * ``histories`` : dict[str, Series/DataFrame]
-                * ``proportions`` : dict[str, float] (top-down)
-                * ``periodic_proportions`` : DataFrame (top-down per period)
+        ****kwargs : dict[str, Any]**
+
+        Strategy-specific inputs.  For example:
+
+        * `forecasts` : dict[str, Series/DataFrame]
+        * `histories` : dict[str, Series/DataFrame]
+        * `proportions` : dict[str, float] (top-down)
+        * `periodic_proportions` : DataFrame (top-down per period)
 
         Returns
         -------
-        AggregationResult
-            Container holding aggregated output, components, and metadata.
+        **AggregationResult**
+
+        Container holding aggregated output, components, and metadata.
 
         Notes
         -----
@@ -133,6 +152,15 @@ class Aggregator(ABC):
         """
 
 class BottomUpAggregator(Aggregator):
+
+    """
+    Aggregation strategy that sums component series to produce a total.
+
+    The bottom-up approach aligns all component histories and forecasts to a
+    common index, fills missing values with zeros, and then computes the
+    aggregate by simple addition. This strategy assumes that each component
+    contributes additively to the total without weighting or reconciliation.
+    """
 
     def aggregate(self, forecasts: dict, histories: dict, **kwargs):
 
@@ -144,6 +172,7 @@ class BottomUpAggregator(Aggregator):
 
         Workflow
         --------
+
         1. Align all histories to a common index.
         2. Sum aligned histories to an aggregated history.
         3. Align all forecasts to a common index.
@@ -154,19 +183,23 @@ class BottomUpAggregator(Aggregator):
 
         Parameters
         ----------
-        forecasts : dict[str, Series | DataFrame]
-            Component forecast series keyed by work type.
+        **forecasts : dict[str, Series | DataFrame]**
 
-        histories : dict[str, Series | DataFrame]
-            Component historical series keyed by work type.
+        Component forecast series keyed by work type.
+
+        **histories : dict[str, Series | DataFrame]**
+
+        Component historical series keyed by work type.
 
         Returns
         -------
-        AggregationResult
-            Contains:
-                * ``aggregated`` - the aggregated forecast
-                * ``components`` - aligned component forecasts
-                * ``metadata`` - history, aggregated history, combined frame
+        **AggregationResult**
+
+        Contains:
+
+        * `aggregated`, the aggregated forecast.
+        * `components`, aligned component forecasts.
+        * `metadata`, history, aggregated history, combined frame.
 
         Notes
         -----
@@ -263,13 +296,15 @@ class BottomUpAggregator(Aggregator):
 
         Parameters
         ----------
-        series_dict : dict[str, Series | DataFrame]
-            Mapping of component names to their time series.
+        **series_dict : dict[str, Series | DataFrame]**
+
+        Mapping of component names to their time series.
 
         Returns
         -------
-        dict[str, Series | DataFrame]
-            A new dictionary where each series is aligned to the union index.
+        **dict[str, Series | DataFrame]**
+
+        A new dictionary where each series is aligned to the union index.
 
         Notes
         -----

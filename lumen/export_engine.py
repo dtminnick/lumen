@@ -1,22 +1,23 @@
 
-# lumen/export_engine.py
-
 """
 Export utilities for Lumen decomposition, forecasting, and multi-series aggregation.
 
-The :class:`ExportEngine` writes model outputs, diagnostics, and metadata to
+The class `ExportEngine` writes model outputs, diagnostics, and metadata to
 disk in either csv or xlsx format.  It supports two export pathways:
 
-1. Single-series export via :meth:`export`
-    Writes history, forecast, decomposition components, residuals, and diagnostics.
+1. Single-series export via method `export`.
+    
+Writes history, forecast, decomposition components, residuals, and diagnostics.
 
-2. Multi-series + aggregated export via :meth:`export_payload`
-    Consumes an :class:`ExportPayload` and writes:
-        * Individual forecasts
-        * Combined history and forecast per work type
-        * Aggregated forecast, history, and combined frames
-        * Diagnostics (individual and aggregated)
-        * Metadata
+2. Multi-series + aggregated export via method `export_payload`.
+
+Consumes an `ExportPayload` class and writes:
+
+* Individual forecasts,
+* Combined history and forecast per work type,
+* Aggregated forecast, history, and combined frames,
+* Diagnostics (individual and aggregated), and
+* Metadata.
 
 The engine is intentionally minimal and formatting-focused.  It does not compute
 forecasts, diagnostics, or aggregation, it only writes structured outputs.
@@ -35,16 +36,20 @@ class ExportConfig:
 
     Parameters
     ----------
-    file_type : str, default "xlsx"
-        Output format. Supported values:
-            * ``"xlsx"`` — multi-sheet Excel export
-            * ``"csv"`` — single combined CSV export
+    **file_type : str, default "xlsx"**
 
-    include_history : bool, default True
-        Whether to include historical data in CSV exports.
+    Output format. Supported values:
 
-    rounding : int, default 2
-        Number of decimal places to round numeric output to.
+    * ``"xlsx"`` — multi-sheet Excel export
+    * ``"csv"`` — single combined CSV export
+
+    **include_history : bool, default True**
+    
+    Whether to include historical data in CSV exports.
+
+    **rounding : int, default 2**
+
+    Number of decimal places to round numeric output to.
 
     Notes
     -----
@@ -63,24 +68,25 @@ class ExportEngine:
     """
     Write Lumen model outputs to disk.
 
-    The :class:`ExportEngine` handles all formatting and file writing for both
+    The class `ExportEngine` handles all formatting and file writing for both
     single-series and multi-series workflows. It supports:
 
-        * Combined history + forecast frames
-        * Decomposition components (trend, seasonal cycle, seasonal factors)
-        * Fitted values and residuals
-        * Diagnostics summaries and residual frames
-        * Aggregated forecasts and histories
-        * Metadata sheets
+    * Combined history + forecast frames,
+    * Decomposition components (trend, seasonal cycle, seasonal factors),
+    * Fitted values and residuals,
+    * Diagnostics summaries and residual frames,
+    * Aggregated forecasts and histories, and
+    * Metadata sheets.
 
     Parameters
     ----------
-    config : ExportConfig, optional
-        Export configuration controlling file type and rounding.
+    **config : ExportConfig, optional**
+
+    Export configuration controlling file type and rounding.
 
     Notes
     -----
-    The engine does not compute any values — it only writes what is provided.
+    The engine does not compute any values, it only writes what is provided.
     """
 
     def __init__(self, config: ExportConfig = ExportConfig()):
@@ -90,29 +96,34 @@ class ExportEngine:
 
         This constructor sets up the export subsystem responsible for writing
         decomposition results, forecasts, diagnostics, and metadata to disk.
-        The engine itself performs no computation — it formats and writes the
+        The engine itself performs no computation, it formats and writes the
         outputs produced by the forecasting and diagnostics layers.
 
         Parameters
         ----------
-        config : ExportConfig, optional
-            Configuration controlling export format (``"xlsx"`` or ``"csv"``),
-            inclusion of history, and numeric rounding. Defaults to a new
-            :class:`ExportConfig` instance.
+        **config : ExportConfig, optional**
+
+        Configuration controlling export format (`"xlsx"` or `"csv"`),
+        inclusion of history, and numeric rounding. Defaults to a new
+        class `ExportConfig` instance.
 
         Attributes
         ----------
-        config : ExportConfig
-            Export settings used by all export methods, including:
-                * ``file_type`` — output format
-                * ``include_history`` — whether to include history in CSV exports
-                * ``rounding`` — decimal precision for numeric values
+        **config : ExportConfig**
+
+        Export settings used by all export methods, including:
+
+        * `file_type`, output format.
+        * `include_history`, whether to include history in csv exports.
+        * `rounding`, decimal precision for numeric values.
 
         Notes
         -----
-        * Excel exports support multi‑sheet output and full diagnostic detail.
-        * CSV exports are intentionally minimal and include only the combined frame.
-        * Multi‑series exports via :meth:`export_payload` require ``file_type="xlsx"``.
+        Excel exports support multi-sheet output and full diagnostic detail.
+
+        CSV exports are intentionally minimal and include only the combined frame.
+
+        Multi-series exports via :meth:`export_payload` require `file_type="xlsx"`.
         """
 
         self.config = config
@@ -133,45 +144,53 @@ class ExportEngine:
         Export decomposition + forecast results for a single series.
 
         This method is used by the single-series workflow and writes either:
-            * A combined CSV file, or
-            * A multi-sheet Excel workbook containing:
-                - Combined history + forecast
-                - History
-                - Forecast
-                - Trend
-                - Seasonal factors over time
-                - Seasonal cycle
-                - Fitted values
-                - Residuals
-                - Diagnostics summary
-                - Anomalies (if present)
+
+        * A combined CSV file, or
+        * A multi-sheet Excel workbook containing:
+            - Combined history + forecast
+            - History
+            - Forecast
+            - Trend
+            - Seasonal factors over time
+            - Seasonal cycle
+            - Fitted values
+            - Residuals
+            - Diagnostics summary
+            - Anomalies (if present)
 
         Parameters
         ----------
-        path : str
-            Output file path (.xlsx or .csv).
+        **path : str**
 
-        loader : DataLoader
-            Provides validated historical data.
+        Output file path (.xlsx or .csv).
 
-        model : SeriesDecomposition
-            Fitted decomposition model containing trend, seasonal factors,
-            fitted values, and residuals.
+        **loader : DataLoader**
+            
+        Provides validated historical data.
 
-        forecast : pd.Series, optional
-            Forecasted values for the horizon.
+        **model : SeriesDecomposition**
 
-        future_index : pd.DatetimeIndex, optional
-            Index corresponding to the forecast horizon.
+        Fitted decomposition model containing trend, seasonal factors,
+        fitted values, and residuals.
 
-        diagnostics : DiagnosticsEngine, optional
-            Diagnostics object containing error metrics, anomalies, and
-            residual frames.
+        **forecast : pd.Series, optional**
+
+        Forecasted values for the horizon.
+
+        **future_index : pd.DatetimeIndex, optional**
+
+        Index corresponding to the forecast horizon.
+
+        **diagnostics : DiagnosticsEngine, optional**
+
+        Diagnostics object containing error metrics, anomalies, and
+        residual frames.
 
         Raises
         ------
-        ValueError
-            If the configured file type is unsupported.
+        **ValueError**
+
+        If the configured file type is unsupported.
         """
 
         if self.config.file_type.lower() == "csv":
@@ -189,35 +208,38 @@ class ExportEngine:
     def export_payload(self, path: str, payload: ExportPayload) -> None:
 
         """
-        Export a multi‑series or aggregated forecasting run.
+        Export a multi-series or aggregated forecasting run.
 
-        This method consumes an :class:`ExportPayload` and writes a structured
+        This method consumes an class `ExportPayload` and writes a structured
         Excel workbook containing:
 
-            * Individual forecasts
-            * Combined history + forecast per work type
-            * Aggregated forecast (if present)
-            * Aggregated history and combined frames
-            * Diagnostics (individual + aggregated)
-            * Metadata sheet
+        * Individual forecasts
+        * Combined history + forecast per work type
+        * Aggregated forecast (if present)
+        * Aggregated history and combined frames
+        * Diagnostics (individual + aggregated)
+        * Metadata sheet
 
         Parameters
         ----------
-        path : str
-            Output Excel file path.
+        **path : str**
+        
+        Output Excel file path.
 
-        payload : ExportPayload
-            Unified container holding forecasts, diagnostics, histories,
-            aggregated results, and metadata.
+        **payload : ExportPayload**
+
+        Unified container holding forecasts, diagnostics, histories,
+        aggregated results, and metadata.
 
         Raises
         ------
-        ValueError
-            If the configured file type is not ``"xlsx"``.
+        **ValueError**
+
+        If the configured file type is not `"xlsx"`.
 
         Notes
         -----
-        CSV export is intentionally not supported for multi‑series payloads.
+        CSV export is intentionally not supported for multi-series payloads.
         """
 
         if self.config.file_type.lower() != "xlsx":
@@ -329,20 +351,25 @@ class ExportEngine:
 
         Parameters
         ----------
-        path : str
-            Output CSV file path.
+        **path : str**
 
-        loader : DataLoader
-            Provides historical data.
+        Output CSV file path.
 
-        model : SeriesDecomposition
-            Fitted decomposition model (unused for CSV export).
+        **loader : DataLoader**
+        
+        Provides historical data.
 
-        forecast : pd.Series or None
-            Forecasted values.
+        **model : SeriesDecomposition**
 
-        future_index : pd.DatetimeIndex or None
-            Index for forecast horizon.
+        Fitted decomposition model (unused for CSV export).
+
+        **forecast : pd.Series or None**
+
+        Forecasted values.
+
+        **future_index : pd.DatetimeIndex or None**
+        
+        Index for forecast horizon.
 
         Notes
         -----
@@ -356,39 +383,46 @@ class ExportEngine:
     def _export_excel(self, path, loader, model, forecast, future_index, diagnostics = None):
 
         """
-        Write a multi‑sheet Excel workbook for a single‑series run.
+        Write a multi-sheet Excel workbook for a single-series run.
 
         Sheets include:
-            * Combined history + forecast
-            * History
-            * Forecast
-            * Trend
-            * Seasonal factors over time
-            * Seasonal cycle
-            * Fitted values
-            * Residuals
-            * Diagnostics summary
-            * Anomalies (if present)
+
+        * Combined history + forecast
+        * History
+        * Forecast
+        * Trend
+        * Seasonal factors over time
+        * Seasonal cycle
+        * Fitted values
+        * Residuals
+        * Diagnostics summary
+        * Anomalies (if present)
 
         Parameters
         ----------
-        path : str
-            Output Excel file path.
+        **path : str**
 
-        loader : DataLoader
-            Provides historical data.
+        Output Excel file path.
 
-        model : SeriesDecomposition
-            Fitted decomposition model.
+        **loader : DataLoader**
 
-        forecast : pd.Series or None
-            Forecasted values.
+        Provides historical data.
 
-        future_index : pd.DatetimeIndex or None
-            Index for forecast horizon.
+        **model : SeriesDecomposition**
 
-        diagnostics : DiagnosticsEngine, optional
-            Diagnostics object for summary and residuals export.
+        Fitted decomposition model.
+
+        **forecast : pd.Series or None**
+
+        Forecasted values.
+
+        **future_index : pd.DatetimeIndex or None**
+
+        Index for forecast horizon.
+
+        **diagnostics : DiagnosticsEngine, optional**
+
+        Diagnostics object for summary and residuals export.
         """
 
         with pd.ExcelWriter(path) as writer:
@@ -477,29 +511,34 @@ class ExportEngine:
         Construct a tidy combined DataFrame of history + forecast.
 
         The output contains:
-            * ``timestamp`` — datetime index
-            * ``value`` — numeric value
-            * ``is_forecast`` — boolean flag
+
+        * `timestamp`, datetime index.
+        * `value`, numeric value.
+        * `is_forecast`, boolean flag.
 
         Parameters
         ----------
-        loader : DataLoader
-            Provides historical data.
+        **loader : DataLoader**
 
-        forecast : pd.Series or None
-            Forecasted values.
+        Provides historical data.
 
-        future_index : pd.DatetimeIndex or None
-            Index for forecast horizon.
+        **forecast : pd.Series or None**
+
+        Forecasted values.
+
+        **future_index : pd.DatetimeIndex or None**
+
+        Index for forecast horizon.
 
         Returns
         -------
-        pd.DataFrame
-            Combined tidy DataFrame suitable for CSV or Excel export.
+        **pd.DataFrame**
+
+        Combined tidy DataFrame suitable for CSV or Excel export.
 
         Notes
         -----
-        Values are rounded according to :class:`ExportConfig.rounding`.
+        Values are rounded according to class `ExportConfig.rounding`.
         """
 
         hist = loader.data.copy()

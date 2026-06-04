@@ -1,10 +1,8 @@
 
-# lumen/data_loader.py
-
 """
 Data loading, validation, and frequency inference for Lumen time series modeling.
 
-This module defines the :class:`DataLoader` and :class:`DataConfig` classes,
+This module defines the `DataLoader` and `DataConfig` classes,
 which together form the foundation of the Lumen forecasting pipeline.
 
 Responsibilities
@@ -19,7 +17,7 @@ The loader performs all preprocessing required before modeling:
 * Detect missing timestamps (gaps).
 * Provide a clean, regularized DataFrame for modeling.
 
-The loader is intentionally strict — it enforces clean, well‑formed time
+The loader is intentionally strict — it enforces clean, well-formed time
 series so that downstream STL decomposition and forecasting behave reliably.
 """
 
@@ -78,41 +76,58 @@ class DataConfig:
     """
     Configuration for loading and preparing time series data.
 
-    This dataclass defines how the :class:`DataLoader` interprets input files.
+    This dataclass defines how the class `DataLoader` interprets input files.
     It allows users to override frequency, file type, seasonal period, LOESS
     span, and output rounding.
 
     Parameters
     ----------
-    date_col : str, default "date"
-        Name of the date column in the input file.
+    **date_col : str, default "date"**
 
-    value_col : str, default "value"
-        Name of the numeric value column.
+    Name of the date column in the input file.
 
-    freq : str, optional
-        Explicit frequency override (e.g., "MS", "D", "W"). If provided,
-        frequency inference is skipped.
+    **value_col : str, default "value"**
+    
+    Name of the numeric value column.
 
-    file_type : str, optional
-        Explicit file type ("csv" or "xlsx"). If omitted, the loader infers
-        file type from the file extension.
+    **freq : str, optional**
+        
+    Explicit frequency override (e.g., "MS", "D", "W"). If provided,
+    frequency inference is skipped.
 
-    period : int, optional
-        Explicit seasonal period override. If omitted, the loader uses
-        :data:`FREQ_TO_PERIOD`.
+    **file_type : str, optional**
 
-    loess_frac : float, optional
-        Explicit LOESS span override. If omitted, the loader uses
-        :data:`FREQ_TO_LOESS_FRAC`.
+    Explicit file type ("csv" or "xlsx"). If omitted, the loader infers
+    file type from the file extension.
 
-    rounding : int, optional
-        Optional rounding applied during export formatting.
+    **period : int, optional**
+
+    Explicit seasonal period override. If omitted, the loader uses data
+    `FREQ_TO_PERIOD`.
+
+    **loess_frac : float, optional**
+        
+    Explicit LOESS span override. If omitted, the loader uses
+    data `FREQ_TO_LOESS_FRAC`.
+
+    **rounding : int, optional**
+    
+    Optional rounding applied during export formatting.
+
+    **continuity_method : str**
+
+    How to handle continuity at the history / forecast boundary.
+    Options none, hard, blend, both, default none.
+
+    **continuity_blend_points : int**
+        
+    How many points blend for blend, both options,
+    default 5.
 
     Notes
     -----
     This configuration object is lightweight and does not validate values.
-    Validation occurs inside :class:`DataLoader`.
+    Validation occurs inside class `DataLoader`.
     """
 
     date_col: str = "date"
@@ -129,12 +144,16 @@ class DataConfig:
 
     rounding: Optional[int] = None
 
+    continuity_method: str = "none"
+
+    continuity_blend_points: int = 5
+
 class DataLoader:
 
     """
     Load, validate, regularize, and summarize time series data.
 
-    The :class:`DataLoader` is responsible for preparing raw input files for
+    The class `DataLoader` is responsible for preparing raw input files for
     modeling. It ensures that the dataset is:
 
         * Chronologically sorted
@@ -144,7 +163,7 @@ class DataLoader:
         * Numeric
         * Regularly spaced with a known frequency
 
-    After loading, the cleaned DataFrame is accessible via :attr:`data`.
+    After loading, the cleaned DataFrame is accessible via attribute `data`.
     """
 
     def __init__(self, config: DataConfig):
@@ -154,13 +173,14 @@ class DataLoader:
 
         Parameters
         ----------
-        config : DataConfig
-            Configuration defining how the loader interprets input files.
+        **config : DataConfig**
+        
+        Configuration defining how the loader interprets input files.
 
         Notes
         -----
-        The loader does not immediately load data. Call :meth:`load_file`
-        to populate :attr:`data`.
+        The loader does not immediately load data. Call method `load_file`
+        to populate attribute `data`.
         """
         
         self.config = config
@@ -187,19 +207,21 @@ class DataLoader:
 
         Parameters
         ----------
-        path : str
-            Path to the input file.
+        **path : str**
+        
+        Path to the input file.
 
         Raises
         ------
-        ValueError
-            If required columns are missing, file type is unsupported,
-            or frequency cannot be inferred.
+        **ValueError**
+
+        If required columns are missing, file type is unsupported,
+        or frequency cannot be inferred.
 
         Notes
         -----
         After calling this method, the cleaned DataFrame is available via
-        :attr:`data`, and the canonical frequency via :attr:`freq`.
+        attribute `data`, and the canonical frequency via attribute `freq`.
         """
 
         file_type = self._resolve_file_type(path)
@@ -239,7 +261,7 @@ class DataLoader:
     def summary(self) -> None:
 
         """
-        Print a human‑readable summary of the dataset.
+        Print a human-readable summary of the dataset.
 
         Displays:
             * Frequency
@@ -279,10 +301,7 @@ class DataLoader:
         """
         Print a summary of missing timestamps.
 
-        Displays:
-            * Frequency
-            * Number of missing periods
-            * First 10 missing timestamps (if any)
+        Displays frequency, number of missing periods, first 10 missing timestamps, if any.
 
         Notes
         -----
@@ -308,8 +327,9 @@ class DataLoader:
 
         Returns
         -------
-        pd.Series
-            The value column extracted from :attr:`data`.
+        **pd.Series**
+
+        The value column extracted from :attr:`data`.
         """
 
         return self.data[self.config.value_col]
@@ -324,13 +344,15 @@ class DataLoader:
 
         Returns
         -------
-        pd.DataFrame
-            Cleaned time series data.
+        **pd.DataFrame**
+
+        Cleaned time series data.
 
         Raises
         ------
-        ValueError
-            If data has not been loaded yet.
+        **ValueError**
+
+        If data has not been loaded yet.
         """
 
         if self._data is None:
@@ -347,13 +369,15 @@ class DataLoader:
 
         Returns
         -------
-        str
-            Canonical frequency (e.g., "MS", "D", "W").
+        **str**
+            
+        Canonical frequency (e.g., "MS", "D", "W").
 
         Raises
         ------
-        ValueError
-            If frequency has not been determined.
+        **ValueError**
+
+        If frequency has not been determined.
         """
 
         if self._freq is None:
@@ -370,13 +394,15 @@ class DataLoader:
 
         Returns
         -------
-        float
-            LOESS span fraction.
+        **float**
+            
+        LOESS span fraction.
 
         Raises
         ------
-        ValueError
-            If no LOESS span is defined for this frequency.
+        **ValueError**
+        
+        If no LOESS span is defined for this frequency.
         """
 
         freq = self.freq
@@ -395,13 +421,15 @@ class DataLoader:
 
         Returns
         -------
-        int
-            Number of observations per seasonal cycle.
+        **int**
+        
+        Number of observations per seasonal cycle.
 
         Raises
         ------
-        ValueError
-            If no seasonal period is defined for this frequency.
+        **ValueError**
+
+        If no seasonal period is defined for this frequency.
         """
 
         freq = self.freq
@@ -421,8 +449,9 @@ class DataLoader:
 
         Returns
         -------
-        pd.DatetimeIndex
-            All timestamps missing from the expected date range.
+        **pd.DatetimeIndex**
+            
+        All timestamps missing from the expected date range.
 
         Notes
         -----
@@ -442,13 +471,15 @@ class DataLoader:
         Infer frequency from index or use explicit override.
 
         Order of precedence:
-            1. Explicit ``config.freq``.
-            2. ``pandas.infer_freq`` applied to the index.
+
+            1. Explicit `config.freq`.
+            2. `pandas.infer_freq` applied to the index.
 
         Raises
         ------
-        ValueError
-            If no frequency can be inferred.
+        **ValueError**
+
+        If no frequency can be inferred.
         """
 
         if self.config.freq:
@@ -475,18 +506,21 @@ class DataLoader:
 
         Parameters
         ----------
-        freq : str
-            Raw frequency string (e.g., "M", "MS", "W-SUN").
+        **freq : str**
+
+        Raw frequency string (e.g., "M", "MS", "W-SUN").
 
         Returns
         -------
-        str
-            Canonical frequency.
+        **str**
+            
+    Canonical frequency.
 
         Raises
         ------
-        ValueError
-            If frequency is unrecognized.
+        **ValueError**
+
+        If frequency is unrecognized.
         """
 
         freq = freq.upper()
@@ -508,17 +542,19 @@ class DataLoader:
 
         Parameters
         ----------
-        path : str
-            Path to the input file.
+        **path : str**
+
+        Path to the input file.
 
         Returns
         -------
-        str
-            Either ``"csv"`` or ``"xlsx"``.
+        **str**
+            
+        Either ``"csv"`` or ``"xlsx"``.
 
         Raises
         ------
-        ValueError
+        **ValueError**
             If file type cannot be determined.
         """
 
@@ -547,6 +583,7 @@ class DataLoader:
         Validate the loaded DataFrame before modeling.
 
         Ensures:
+
             * No missing dates.
             * No duplicate timestamps.
             * Numeric value column.
@@ -555,13 +592,15 @@ class DataLoader:
 
         Parameters
         ----------
-        df : pd.DataFrame
-            DataFrame to validate.
+        **df : pd.DataFrame**
+            
+        DataFrame to validate.
 
         Raises
         ------
-        ValueError
-            If any validation rule fails.
+        **ValueError**
+        
+        If any validation rule fails.
         """
 
         if df.index.isna().any():

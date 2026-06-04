@@ -65,11 +65,16 @@ nav:
       - Forecast Engine: forecast_engine.md
       - Export Engine: export.md
       - Export Payload: export_payload.md
-      - Diagnostics Engine: diagnostics.md
       - Plotter: plotter.md
       - Lumen API: lumen_api.md
-      - Orchestrator: orchestrator.md
       - Aggregator: aggregator.md
       - Aggregator Factory: aggregator_factory.md
+  - Reference:
+      - Aggregator: aggregator.md
+      - Aggregator Factory: aggregator_factory.md
+      - Data Loader: data_loader.md
+      - Diagnostics Engine: diagnostics_engine.md
+      - Export Engine: export_engine.md
+      - Orchestrator: orchestrator.md
   - Datasets: datasets.md
   - FAQ: faq.md

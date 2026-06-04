@@ -1,23 +1,17 @@
 
-# lumen/orchetrator.py
-
 """
-High-level orchestration layer for multi-series and single-series Lumen workflows.
+Provides high-level orchestration layer for multi-series and single-series Lumen workflows.
 
-This module defines the :class:`Orchestrator`, the central coordination layer
+This module defines the class `Orchestrator`, the central coordination layer
 responsible for running Lumen forecasting pipelines across one or many input
 series, applying optional aggregation strategies, and producing a unified
-:class:`ExportPayload` for downstream export.
+class `ExportPayload` for downstream export.
 
-The orchestrator handles:
-    * Single-series forecasting
-    * Multi-series forecasting
-    * Aggregation (bottom-up, top-down, etc)
-    * Construction of export-ready payloads
+The Orchestrator handles single-series and multi-series forecasting, series aggregation, and 
+construction of export-ready payloads.
 
-It does **not** perform forecasting itself - forecasting is delegated to
-:class:`Lumen`, and aggregation is delegated to subclasses of 
-:class:`Aggregator`.
+The Orchestrator does not perform forecasting itself.  Forecasting is delegated to
+class `Lumen`, and aggregation is delegated to subclasses of class `Aggregator`.
 """
 
 from __future__ import annotations
@@ -31,79 +25,99 @@ from lumen.aggregator import Aggregator
 class Orchestrator:
 
     """
-    Multi-series orchestration layer for Lumen.
+    Provides the orchestration layer for Lumen.
 
-    This class coordinates the full forecasting workflow, including:
-        * Running single-series forecasts
-        * Running multi-series forecasts
-        * Applying optional aggregation strategies
-        * Building :class:`ExportPayload` objects for export
+    This class coordinates the full forecasting workflow, including running single-series
+    and multi-series forecasts, applying optional aggregation strategies, and 
+    building class `ExportPayload` objects for exporting forecast data.
 
-    The orchestrator is intentionally lightweight.  It delegates:
-        * Forecasting to :class:`Lumen'
-        * Aggregation to :class:`Aggregator`
-        * Export to :class:`ExportEngine`
+    The orchestrator is intentionally lightweight.  It delegates forecasting to
+    class `Lumen`, aggregation to class `Aggregator`, and export to class `ExportEngine`.
 
     Parameters
     ----------
-    data_config : DataConfig
-        Configuration describing how input time series should be parsed.
+    **data_config : DataConfig**
+    
+    Configuration describing how input time series should be parsed.
 
-    export_config : ExportConfig, optional
-        Configuration for the export engine.  If omitted, a default
-        :class:`ExportConfig` is created.
+    **export_config : ExportConfig, optional**
+    
+    Configuration for the export engine.  If omitted, a default class `ExportConfig` is created.
 
     Attributes
     ----------
-    data_config : DataConfig
-        Configuration for loading and interpreting input data.
+    **data_config : DataConfig**
+    
+    Configuration for loading and interpreting input data.
 
-    export_config : ExportConfig
-        Configuration for export formatting and output behavior.
+    **export_config : ExportConfig**
+    
+    Configuration for export formatting and output behavior.
 
-    exporter : ExportEngine
-        Engine responsible for writing :class:`ExportPayload` objects to disk.
+    **exporter : ExportEngine**
+    
+    Engine responsible for writing class `ExportPayload` objects to disk.
     """
 
     def __init__(self, data_config, export_config: Optional[ExportConfig] = None):
-        self.data_config = data_config
-        self.export_config = export_config or ExportConfig()
-        self.exporter = ExportEngine(self.export_config)
 
-    # Single-series flow.
+        """
+        Initialize the orchestrator with data-loading and export configuration.
+
+        The orchestrator wires together the data configuration and export engine.
+        It does not load data or run any forecasting logic at initialization.
+
+        Parameters
+        ----------
+        **data_config : DataConfig**
+
+        Configuration describing the input series, frequency, and preprocessing.
+
+        **export_config : ExportConfig, optional**
+
+        Settings controlling export format and behavior. If omitted, a default 
+        class `ExportConfig` instance is created.
+        """
+
+        self.data_config = data_config
+
+        self.export_config = export_config or ExportConfig()
+        
+        self.exporter = ExportEngine(self.export_config)
 
     def run_single(self, path: str, steps: int) -> ExportPayload:
 
         """
         Run a complete single-series Lumen forecast workflow.
 
-        This method:
-            1. Loads a single input file.
-            2. Fits a Lumen model.
-            3. Produces a forecast.
-            4. Packages results into an :class:`ExportPayload`
+        This method loads a single input file, fits a Lumen model, 
+        produces a forecast, and packages results into a class `ExportPayload`.
 
         Parameters
         ----------
-        path : str
-            Path to the input time series file.
+        **path : str**
+            
+        Path to the input time series file.
 
-        steps : int
-            Number of forecast periods to generate.
+        **steps : int**
+        
+        Number of forecast periods to generate.
 
         Returns
         -------
-        ExportPayload
-            Contains:
-                * ``individual`` - forecast for the single series
-                * ``aggregated`` - None
-                * ``diagnostics`` - model diagnostics
-                * ``metadata`` - mode = "single_series"
+        **ExportPayload**
+            
+        Contains:
+                
+        * `individual`, dictionary containing the actual forecast output for the single series, returned as a pandas Series or DataFrame.
+        * `aggregated`, always `None` in single-series mode because there's nothing to aggregate.
+        * `diagnostics`, dictionary containing the model diagnostics (residuals, metrics, decomposition, etc.) for the single series.
+        * `metadata`, dictionary describing the context of the run, including that the mode is "single-series" and the original input history.
 
         Notes
         -----
         This method does not perform aggregation.  It is a thin wrapper around 
-        the :class:`Lumen` single-series pipeline.
+        the class `Lumen` single-series pipeline.
         """
 
         lumen = Lumen(self.data_config, self.export_config)
@@ -122,8 +136,6 @@ class Orchestrator:
             metadata={"mode": "single_series"}
         )
 
-    # Multi-series flow.
-
     def run_multi(
         self,
         paths: Dict[str, str],
@@ -135,43 +147,46 @@ class Orchestrator:
         """
         Run a multi-series forecasting workflow with optional aggregation.
 
-        This method:
-            1. Runs Lumen independently for each work type.
-            2. Collects histories, forecasts, and diagnostics.
-            3. Applies an aggregation strategy (if provided).
-            4. Builds a unified :class:`ExportPayload`.
+        This method runs Lumen independently for each work type, collects histories, 
+        forecasts, and diagnostics, applies an aggregation strategy, if provided, 
+        and builds a unified class `ExportPayload`.
 
         Parameters
         ----------
-        paths : dict[str, str]
-            Mapping of work type to input file path.
+        **paths : dict[str, str]**
+        
+        Mapping of work type to input file path.
 
-        steps : int
-            Number of forecast periods for each series.
+        **steps : int**
+        
+        Number of forecast periods for each series.
 
-        aggregator : Aggregator, optional
-            Aggregation strategy to apply.  If omitted, no aggregation is
-            performed and ``aggregated`` fields in the payload are ``None``.
+        **aggregator : Aggregator, optional**
+        
+        Aggregation strategy to apply; if omitted, no aggregation is
+        performed and `aggregated` fields in the payload are `None`.
 
-        **agg_kwargs :
-            Additional keyword arguments passed directly to the aggregator's
-            :meth:`aggregate` method.  Examples include:
-                * ``proportions`` (top-down constant)
-                * ``periodic_proportions`` (top-down per period)
+        ****agg_kwargs : dict[str, Any]**
+        
+        Additional keyword arguments passed directly to the aggregator's 
+        `aggregate` method.  Examples include `proportions` (top-down constant) and
+        `periodic_proportions` (top-down per period).
 
         Returns
         -------
-        ExportPayload
-            Contains:
-                * ``individual`` - per-series forecasts
-                * ``aggregated`` - aggregated forecast (if applicable)
-                * ``diagnostics`` - per-series diagnostics
-                * ``aggregated_diagnostics`` - aggregator diagnostics (if any)
-                * ``metadata`` - histories, strategy name, combined frames, etc.
+        **ExportPayload**
+            
+        Contains:
+
+        * `individual`, dictionary containing per-series forecasts.
+        * `aggregated`, dictionary containing aggregated forecast, if applicable.
+        * `diagnostics`, dictionary containing per-series diagnostics.
+        * `aggregated_diagnostics`, dictionary containing aggregator diagnostics, if any.
+        * `metadata`, dictionary containing histories, strategy name, combined frames, etc.
 
         Notes
         -----
-        The orchestrator does **not** validate aggregator semantics.  It simply
+        The orchestrator does not validate aggregator semantics.  It simply
         forwards inputs to the aggregator and packages the result.
         """
 
@@ -273,8 +288,25 @@ class Orchestrator:
 
         )
 
-    # Export wrapper.
-
     def export(self, path: str, payload: ExportPayload):
+
+        """
+        Write a fully‑constructed class `ExportPayload` to disk.
+
+        This method is a thin wrapper around `ExportEngine.export_payload`,
+        delegating the actual serialization and file writing to the configured
+        export engine. It does not modify the payload or perform validation.
+
+        Parameters
+        ----------
+        **path : str**
+
+        Destination file path for the exported output.
+
+        **payload : ExportPayload**
+
+        The forecast results, diagnostics, and metadata produced by `Orchestrator.run_single` 
+        or `Orchestrator.run_multi`.
+        """
 
         self.exporter.export_payload(path, payload)
