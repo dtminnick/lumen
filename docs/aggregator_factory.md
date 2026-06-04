@@ -1,4 +1,4 @@
 
 # Aggregator Factory
 
-::: lumen.aggregation_factory
+::: lumen.aggregator_factory

@@ -4,18 +4,18 @@
 """
 Unified export container for single-series and multi-series Lumen forecasting.
 
-The :class:`ExportPayload` dataclass defined the canonical data contract between
+The class `ExportPayload` dataclass defined the canonical data contract between
 the forecasting/orchestration layer and the export layer.  It encapsulates all
 outputs required to write a complete export file, including:
 
-    * Per-work-type forecasts
-    * Optional aggregated forecast
-    * Diagnostics for each work type
-    * Optional aggregated diagnostics
-    * Rich metadata describing histories, combined frames, strategy details, etc.
+* Per-work-type forecasts,
+* Optional aggregated forecast,
+* Diagnostics for each work type,
+* Optional aggregated diagnostics, and
+* Rich metadata describing histories, combined frames, strategy details.
 
-This object is produced by :class:`Orchestrator` and consumed by
-:class:`ExportEngine`.  It is intentionally flexible and strategy-agnostic.
+This object is produced by class `Orchestrator` and consumed by
+class `ExportEngine`.  It is intentionally flexible and strategy-agnostic.
 """
 
 from __future__ import annotations
@@ -37,48 +37,56 @@ class ExportPayload:
 
     Parameters
     ----------
-    individual : dict[str, pd.Series | pd.DataFrame]
-        Mapping of work type → forecast output.  
-        For single-series workflows, this contains a single entry:
-        ``{"default": forecast}``.
+    **individual : dict[str, pd.Series | pd.DataFrame]**
 
-        Each forecast may be:
-            * A ``pd.Series`` (single value column)
-            * A ``pd.DataFrame`` (multi-column forecast)
+    Mapping of work type → forecast output. For single-series workflows, 
+    this contains a single entry: `{"default": forecast}`.
 
-    aggregated : pd.Series | pd.DataFrame | None
-        The aggregated forecast produced by an aggregation strategy.
-        ``None`` if no aggregation was applied.
+    Each forecast may be:
 
-        Examples:
-            * Bottom-up is sum of component forecasts  
-            * Top-down is allocated forecast based on proportions
+    * A `pd.Series` (single value column)
+    * A `pd.DataFrame` (multi-column forecast)
 
-    diagnostics : dict[str, DiagnosticsEngine]
-        Mapping of work type → diagnostics object produced by Lumen.
-        Each :class:`DiagnosticsEngine` contains:
-            * residuals
-            * anomaly detection
-            * model fit metrics
-            * seasonal/trend strength
-            * plots (if enabled)
+    **aggregated : pd.Series | pd.DataFrame | None**
 
-    aggregated_diagnostics : DiagnosticsEngine | None
-        Diagnostics for the aggregated forecast, if the aggregation strategy
-        produces them. ``None`` for strategies that do not compute diagnostics.
+    The aggregated forecast produced by an aggregation strategy.
+    `None` if no aggregation was applied.
 
-    metadata : dict[str, Any]
-        Arbitrary metadata describing the run. Common fields include:
+    Examples:
 
-            * ``mode`` — "single_series" or "multi_series"
-            * ``strategy`` — name of the aggregation strategy
-            * ``history`` — per-work-type historical series
-            * ``aggregated_history`` — aggregated historical series
-            * ``aggregated_combined`` — combined history+forecast DataFrame
-            * aggregator-specific fields (e.g., proportions, weights)
+    * Bottom-up is sum of component forecasts.
+    * Top-down is allocated forecast based on proportions.
 
-        The export engine does not enforce a schema — it simply writes
-        metadata to the output file where appropriate.
+    **diagnostics : dict[str, DiagnosticsEngine]**
+
+    Mapping of work type to diagnostics object produced by Lumen.
+
+    Each class `DiagnosticsEngine` contains:
+
+    * residuals,
+    * anomaly detection,
+    * model fit metrics,
+    * seasonal/trend strength, and
+    * plots, if enabled.
+
+    **aggregated_diagnostics : DiagnosticsEngine | None**
+
+    Diagnostics for the aggregated forecast, if the aggregation strategy
+    produces them. `None` for strategies that do not compute diagnostics.
+
+    **metadata : dict[str, Any]**
+
+    Arbitrary metadata describing the run. Common fields include:
+
+    * `mode`, single_series or multi_series,
+    * `strategy`, name of the aggregation strategy,
+    * `history`, per-work-type historical series,
+    * `aggregated_history`, aggregated historical series,
+    * `aggregated_combined`, combined history+forecast DataFrame, and
+    * aggregator-specific fields (e.g., proportions, weights).
+
+    The export engine does not enforce a schema, it simply writes
+    metadata to the output file where appropriate.
 
     Notes
     -----
@@ -86,7 +94,7 @@ class ExportPayload:
     enforce column names, or interpret metadata. All semantic meaning is
     defined by the orchestrator and aggregation strategies.
 
-    The :class:`ExportEngine` relies on this object to determine which sheets
+    The class `ExportEngine` relies on this object to determine which sheets
     to write, how to structure combined frames, and how to include diagnostics.
     """
 

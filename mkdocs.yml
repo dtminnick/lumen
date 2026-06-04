@@ -57,24 +57,17 @@ nav:
       - Anomalies: anomalies.md
       - Continuity: continuity.md
       - Strength Metrics: strength_metrics.md
-  - Architecture:
-      - Overview: architecture.md
-      - Data Configuration: data_config.md
-      - Data Loader: data_loader.md
-      - Series Decomposition: decomposition.md
-      - Forecast Engine: forecast_engine.md
-      - Export Engine: export.md
-      - Export Payload: export_payload.md
-      - Plotter: plotter.md
-      - Lumen API: lumen_api.md
-      - Aggregator: aggregator.md
-      - Aggregator Factory: aggregator_factory.md
   - Reference:
       - Aggregator: aggregator.md
       - Aggregator Factory: aggregator_factory.md
       - Data Loader: data_loader.md
       - Diagnostics Engine: diagnostics_engine.md
       - Export Engine: export_engine.md
+      - Export Payload: export_payload.md
+      - Forecast Engine: forecast_engine.md
+      - Lumen: lumen.md
       - Orchestrator: orchestrator.md
+      - Plotter: plotter.md
+      - Series Decomposition: series_decomposition.md
   - Datasets: datasets.md
   - FAQ: faq.md

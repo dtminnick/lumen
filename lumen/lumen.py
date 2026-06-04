@@ -1,11 +1,9 @@
 
-# lumen/lumen.py
-
 """
 High‑level orchestration class for the Lumen forecasting pipeline.
 
 The :class:`Lumen` class provides a simple, unified interface for running the
-entire single‑series forecasting workflow:
+entire single-series forecasting workflow:
 
     * Load and validate data
     * Fit multiplicative STL decomposition
