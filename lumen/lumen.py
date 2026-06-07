@@ -1,25 +1,25 @@
 
 """
-High‑level orchestration class for the Lumen forecasting pipeline.
+High-level orchestration class for the Lumen forecasting pipeline.
 
-The :class:`Lumen` class provides a simple, unified interface for running the
+The `Lumen` class provides a simple, unified interface for running the
 entire single-series forecasting workflow:
 
-    * Load and validate data
-    * Fit multiplicative STL decomposition
-    * Generate forecasts
-    * Compute diagnostics (residuals, anomalies, strengths, continuity)
-    * Export results to CSV or Excel
+* Load and validate data,
+* Fit multiplicative STL decomposition,
+* Generate forecasts,
+* Compute diagnostics (residuals, anomalies, strengths, continuity), and
+* Export results to csv or xlsx.
 
 This class is intentionally lightweight. It delegates:
 
-    * Data loading → :class:`DataLoader`
-    * Decomposition + forecasting → :class:`ForecastEngine`
-    * Diagnostics → :class:`DiagnosticsEngine`
-    * Export → :class:`ExportEngine`
+* Data loading to class `DataLoader`,
+* Decomposition and forecasting class `ForecastEngine`,
+* Diagnostics to class `DiagnosticsEngine`, and
+* Export to class `ExportEngine`.
 
-Most users interact with :class:`Lumen` directly for single‑series forecasting,
-or with :class:`Orchestrator` for multi‑series workflows.
+Most users interact with class `Lumen` directly for single-series forecasting,
+or with class `Orchestrator` for multi-series workflows.
 """
 
 from __future__ import annotations
@@ -32,44 +32,52 @@ from lumen.diagnostics_engine import DiagnosticsEngine
 class Lumen:
 
     """
-    High‑level orchestration class for single‑series Lumen forecasting.
+    High-level orchestration class for single-series Lumen forecasting.
 
-        This class provides a clean, minimal API for running the full forecasting
-        pipeline on a single time series. It handles:
+    This class provides a clean, minimal API for running the full forecasting
+    pipeline on a single time series. It handles:
 
-            * Data loading
-            * STL decomposition
-            * Forecast generation
-            * Diagnostics computation
-            * Export to disk
+    * Data loading,
+    * STL decomposition,
+    * Forecast generation,
+    * Diagnostics computation, and
+    * Export to disk.
 
-        Parameters
-        ----------
-        data_config : DataConfig
-            Configuration for loading and validating the input time series.
+    Parameters
+    ----------
+    **data_config : DataConfig**
 
-        export_config : ExportConfig, optional
-            Configuration for controlling export format and rounding.
+    Configuration for loading and validating the input time series.
 
-        Attributes
-        ----------
-        loader : DataLoader
-            Responsible for loading, validating, and regularizing the dataset.
+    **export_config : ExportConfig, optional**
 
-        engine : ForecastEngine or None
-            Forecasting engine created during :meth:`fit`.
+    Configuration for controlling export format and rounding.
 
-        exporter : ExportEngine
-            Writes results to disk.
+    Attributes
+    ----------
+    **loader : DataLoader**
 
-        diagnostics : DiagnosticsEngine or None
-            Diagnostics computed after fitting or forecasting.
+    Responsible for loading, validating, and regularizing the dataset.
 
-        _forecast : pd.Series or None
-            Forecasted values (if :meth:`forecast` has been called).
+    **engine : ForecastEngine or None**
 
-        _future_index : pd.DatetimeIndex or None
-            Index corresponding to the forecast horizon.
+    Forecasting engine created during method `fit`.
+
+    **exporter : ExportEngine**
+
+    Writes results to disk.
+
+    **diagnostics : DiagnosticsEngine or None**
+
+    Diagnostics computed after fitting or forecasting.
+
+    **_forecast : pd.Series or None**
+
+    Forecasted values (if method `forecast` has been called).
+
+    **_future_index : pd.DatetimeIndex or None**
+
+    Index corresponding to the forecast horizon.
         """
 
     def __init__(self, data_config: DataConfig, export_config: ExportConfig = ExportConfig()):
@@ -80,53 +88,62 @@ class Lumen:
         This constructor wires together all major components required for a
         single-series forecasting workflow, including:
 
-            * :class:`DataLoader` — loads and validates the input time series
-            * :class:`ForecastEngine` — performs STL decomposition + forecasting
-            * :class:`ExportEngine` — writes results to disk
-            * :class:`DiagnosticsEngine` — computed after fitting or forecasting
+        * `DataLoader`, loads and validates the input time series,
+        * `ForecastEngine`, performs STL decomposition + forecasting,
+        * `ExportEngine`, writes results to disk, and
+        * `DiagnosticsEngine`, computed after fitting or forecasting.
 
         No data is loaded and no model is fitted at initialization time.  
-        Call :meth:`load_file` followed by :meth:`fit` and :meth:`forecast` to run
+        Call method `load_file` followed by method `fit` and method `forecast` to run
         the full pipeline.
 
         Parameters
         ----------
-        data_config : DataConfig
-            Configuration describing how input data should be parsed, validated,
-            and interpreted (date column, value column, frequency override, etc.).
+        **data_config : DataConfig**
 
-        export_config : ExportConfig, optional
-            Configuration controlling export format (CSV/Excel) and rounding.
-            Defaults to a new :class:`ExportConfig` instance.
+        Configuration describing how input data should be parsed, validated,
+        and interpreted (date column, value column, frequency override, etc.).
+
+        **export_config : ExportConfig, optional**
+
+        Configuration controlling export format (csv or xlsx) and rounding.
+        Defaults to a new class `ExportConfig` instance.
 
         Attributes
         ----------
-        loader : DataLoader
-            Responsible for loading, validating, and regularizing the dataset.
+        **loader : DataLoader**
 
-        engine : ForecastEngine or None
-            Created during :meth:`fit`. Performs STL decomposition and forecasting.
+        Responsible for loading, validating, and regularizing the dataset.
 
-        exporter : ExportEngine
-            Writes decomposition, forecast, diagnostics, and metadata to disk.
+        **engine : ForecastEngine or None**
 
-        diagnostics : DiagnosticsEngine or None
-            Computed after fitting or forecasting. Contains residuals, anomalies,
-            error metrics, continuity checks, and component strengths.
+        Created during method `fit`. Performs STL decomposition and forecasting.
 
-        _is_fitted : bool
-            Indicates whether :meth:`fit` has been successfully called.
+        **exporter : ExportEngine**
 
-        _forecast : pd.Series or None
-            Forecasted values produced by :meth:`forecast`.
+        Writes decomposition, forecast, diagnostics, and metadata to disk.
 
-        _future_index : pd.DatetimeIndex or None
-            Index corresponding to the forecast horizon.
+        **diagnostics : DiagnosticsEngine or None**
+
+        Computed after fitting or forecasting. Contains residuals, anomalies,
+        error metrics, continuity checks, and component strengths.
+
+        **_is_fitted : bool**
+
+        Indicates whether method `fit` has been successfully called.
+
+        **_forecast : pd.Series or None**
+
+        Forecasted values produced by method `forecast`.
+
+        **_future_index : pd.DatetimeIndex or None**
+            
+        Index corresponding to the forecast horizon.
 
         Notes
         -----
         This class is intentionally minimal. It does not perform decomposition,
-        forecasting, or diagnostics itself — it orchestrates the components that do.
+        forecasting, or diagnostics itself, it orchestrates the components that do.
         """
         
         self.data_config = data_config
@@ -154,13 +171,14 @@ class Lumen:
 
         Parameters
         ----------
-        path : str
-            Path to a CSV or XLSX file.
+        **path : str**
+
+        Path to a CSV or XLSX file.
 
         Notes
         -----
         After loading, the cleaned DataFrame is available via
-        ``self.loader.data``.
+        `self.loader.data`.
         """
 
         self.loader.load_file(path)
@@ -171,15 +189,17 @@ class Lumen:
         Fit the STL decomposition model on the loaded series.
 
         This method:
-            * Creates a :class:`ForecastEngine`
-            * Fits the multiplicative STL decomposition
-            * Computes diagnostics (without forecast)
-            * Resets any previous forecast state
+
+        * Creates a class `ForecastEngine`,
+        * Fits the multiplicative STL decomposition,
+        * Computes diagnostics (without forecast), and
+        * Resets any previous forecast state.
 
         Raises
         ------
-        ValueError
-            If data has not been loaded.
+        **ValueError**
+
+        If data has not been loaded.
         """
 
         self.engine = ForecastEngine(self.loader)
@@ -212,24 +232,28 @@ class Lumen:
         Generate a forecast for the specified number of periods.
 
         This method:
-            * Ensures the model has been fitted
-            * Calls :meth:`ForecastEngine.forecast`
-            * Recomputes diagnostics including continuity and anomalies
+
+        * Ensures the model has been fitted,
+        * Calls method `ForecastEngine.forecast`, and
+        * Recomputes diagnostics including continuity and anomalies.
 
         Parameters
         ----------
-        steps : int
-            Number of periods to forecast.
+        **steps : int**
+
+        Number of periods to forecast.
 
         Returns
         -------
-        pd.Series
-            Forecasted values indexed by future timestamps.
+        **pd.Series**
+
+        Forecasted values indexed by future timestamps.
 
         Raises
         ------
-        ValueError
-            If :meth:`fit` has not been called.
+        **ValueError**
+
+        If method `fit` has not been called.
         """
 
         if not self._is_fitted:
@@ -263,13 +287,15 @@ class Lumen:
 
         Parameters
         ----------
-        path : str
-            Output file path (.xlsx or .csv).
+        **path : str**
+
+        Output file path (csv or xlsx).
 
         Raises
         ------
-        ValueError
-            If :meth:`forecast` has not been called.
+        **ValueError**
+
+        If method `forecast` has not been called.
         """
 
         if self._forecast is None:

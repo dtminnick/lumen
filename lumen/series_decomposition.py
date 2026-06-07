@@ -1,6 +1,4 @@
 
-# lumen/series_decomposition.py
-
 """
 Frequency-aware multiplicative STL-style decomposition for Lumen.
 
@@ -8,27 +6,27 @@ This module implements a lightweight, dependency-minimal decomposition engine
 designed specifically for Lumen's forecasting workflow. It performs a
 multiplicative decomposition of the form:
 
-    series = trend * seasonal * residual
+series = trend * seasonal * residual
 
 Key features
 ------------
-* Frequency-aware seasonal indexing (hourly, daily, weekly, monthly)
-* LOESS-based trend extraction
-* Iterative seasonal refinement
-* Strictly multiplicative structure for stability and interpretability
-* Forecasting via linear trend extrapolation + seasonal cycle
+* Frequency-aware seasonal indexing (hourly, daily, weekly, monthly),
+* LOESS-based trend extraction,
+* Iterative seasonal refinement,
+* Strictly multiplicative structure for stability and interpretability, and
+* Forecasting via linear trend extrapolation + seasonal cycle.
 
 Outputs
 -------
 After fitting, the model provides:
 
-* ``trend_`` — LOESS-smoothed trend component
-* ``seasonal_factors`` — seasonal cycle of length ``period``
-* ``seasonal_factors_`` — seasonal factors expanded across the full timeline
-* ``fitted_`` — reconstructed fitted values
-* ``residual_`` — multiplicative residuals (y / fitted)
+* `trend_` — LOESS-smoothed trend component,
+* `seasonal_factors` — seasonal cycle of length `period`,
+* `seasonal_factors_` — seasonal factors expanded across the full timeline,
+* `fitted_` — reconstructed fitted values, and
+* `residual_` — multiplicative residuals (y / fitted).
 
-This class is intentionally minimal and does not depend on statsmodels’ STL
+This class is intentionally minimal and does not depend on statsmodels STL
 implementation. It is optimized for clarity, reproducibility, and integration
 with Lumen's diagnostics and forecasting layers.
 """
@@ -44,20 +42,22 @@ class SeriesDecomposition:
 
     This class performs a custom implementation of STL-like decomposition using:
 
-        * LOESS smoothing for trend extraction
-        * Frequency-aware seasonal indexing
-        * Iterative seasonal refinement
-        * Multiplicative reconstruction
+    * LOESS smoothing for trend extraction,
+    * Frequency-aware seasonal indexing,
+    * Iterative seasonal refinement, and
+    * Multiplicative reconstruction.
 
-    It is designed to work seamlessly with :class:`DataLoader` and
-    :class:`ForecastEngine`, using the loader's inferred frequency, seasonal
+    It is designed to work seamlessly with class `DataLoader` and
+    class `ForecastEngine`, using the loader's inferred frequency, seasonal
     period, and LOESS span.
 
     Notes
     -----
     * Input series must be strictly positive due to multiplicative structure.
+
     * Seasonal indexing is derived from the canonical frequency (hour, weekday,
       week-of-year, month).
+
     * The algorithm is intentionally simple and transparent, suitable for
       diagnostics and educational use.
     """
@@ -69,44 +69,55 @@ class SeriesDecomposition:
 
         Parameters
         ----------
-        freq : str
-            Canonical frequency string (e.g., ``"H"``, ``"D"``, ``"W"``, ``"MS"``).
-            Determines how timestamps map to seasonal indices.
+        **freq : str**
 
-        period : int
-            Number of observations in one seasonal cycle. Examples:
-                * 24 → hourly
-                * 7  → daily
-                * 52 → weekly
-                * 12 → monthly
+        Canonical frequency string (e.g., `"H"`, `"D"`, `"W"`, `"MS"`).
+        Determines how timestamps map to seasonal indices.
 
-        loess_frac : float
-            Fraction of data used for LOESS smoothing (0-1). Controls trend
-            smoothness. Larger values → smoother trend.
+        **period : int**
 
-        n_iter : int, default 5
-            Number of seasonal-trend refinement iterations. Each iteration:
-                1. Remove seasonality
-                2. Fit LOESS trend
-                3. Remove trend
-                4. Recompute seasonal factors
+        Number of observations in one seasonal cycle. Examples:
+
+        * 24, hourly
+        * 7, daily
+        * 52, weekly
+        * 12, monthly
+
+        **loess_frac : float**
+
+        Fraction of data used for LOESS smoothing (0-1). Controls trend
+        smoothness. Larger values → smoother trend.
+
+        **n_iter : int, default 5**
+
+        Number of seasonal-trend refinement iterations. Each iteration:
+
+        1. Remove seasonality,
+        2. Fit LOESS trend,
+        3. Remove trend, and
+        4. Recompute seasonal factors.
 
         Attributes
         ----------
-        seasonal_factors : np.ndarray or None
-            Seasonal cycle of length ``period`` after fitting.
+        **seasonal_factors : np.ndarray or None**
 
-        seasonal_factors_ : pd.Series or None
-            Seasonal factors expanded across the full timeline.
+        Seasonal cycle of length `period` after fitting.
 
-        trend_ : pd.Series or None
-            LOESS-smoothed trend component.
+        **seasonal_factors_ : pd.Series or None**
 
-        fitted_ : pd.Series or None
-            Reconstructed fitted values: ``trend_ * seasonal_factors_``.
+        Seasonal factors expanded across the full timeline.
 
-        residual_ : pd.Series or None
-            Multiplicative residuals: ``series / fitted_``.
+        **trend_ : pd.Series or None**
+
+        LOESS-smoothed trend component.
+
+        **fitted_ : pd.Series or None**
+
+        Reconstructed fitted values: `trend_ * seasonal_factors_`.
+
+        **residual_ : pd.Series or None**
+
+        Multiplicative residuals: `series / fitted_`.
         """
 
         self.freq = freq
@@ -131,17 +142,19 @@ class SeriesDecomposition:
     def from_loader(cls, loader):
 
         """
-        Create a decomposition model using parameters from a :class:`DataLoader`.
+        Create a decomposition model using parameters from a class `DataLoader`.
 
         Parameters
         ----------
-        loader : DataLoader
-            Provides canonical frequency, seasonal period, and LOESS span.
+        **loader : DataLoader**
+
+        Provides canonical frequency, seasonal period, and LOESS span.
 
         Returns
         -------
-        SeriesDecomposition
-            A decomposition engine configured with loader-derived parameters.
+        **SeriesDecomposition**
+
+        A decomposition engine configured with loader-derived parameters.
 
         Notes
         -----
@@ -162,30 +175,33 @@ class SeriesDecomposition:
 
         The algorithm performs iterative STL-style refinement:
 
-            1. Initialize seasonal cycle to ones
-            2. Repeat for ``n_iter`` iterations:
-                a. Remove seasonality
-                b. Fit LOESS trend
-                c. Remove trend
-                d. Recompute seasonal factors
-            3. Construct final components and residuals
+        1. Initialize seasonal cycle to ones.
+        2. Repeat for `n_iter` iterations:
+            a. Remove seasonality,
+            b. Fit LOESS trend,
+            c. Remove trend, and
+            d. Recompute seasonal factors.
+        3. Construct final components and residuals.
 
         Parameters
         ----------
-        series : pd.Series
-            Time series indexed by ``DatetimeIndex``. All values must be
-            strictly positive.
+        **series : pd.Series**
+
+        Time series indexed by `DatetimeIndex`. All values must be
+        strictly positive.
 
         Raises
         ------
-        ValueError
-            If any values are non-positive.
+        **ValueError**
+
+        If any values are non-positive.
 
         Notes
         -----
         * Seasonal indexing is derived from the timestamp (hour, weekday,
           week-of-year, or month).
-        * LOESS smoothing is performed using ``statsmodels.lowess``.
+
+        * LOESS smoothing is performed using `statsmodels.loess`.
         """
 
         if (series <= 0).any():
@@ -238,32 +254,38 @@ class SeriesDecomposition:
         Forecast using linear trend extrapolation + seasonal cycle.
 
         Forecasting procedure:
-            1. Fit a linear model to the historical trend component
-            2. Extrapolate trend forward ``steps`` periods
-            3. Apply seasonal cycle using frequency-aware seasonal indexing
-            4. Multiply trend and seasonal components
+
+        1. Fit a linear model to the historical trend component.
+        2. Extrapolate trend forward `steps` periods.
+        3. Apply seasonal cycle using frequency-aware seasonal indexing.
+        4. Multiply trend and seasonal components.
 
         Parameters
         ----------
-        steps : int
-            Number of forecast periods.
+        **steps : int**
 
-        future_index : pd.DatetimeIndex
-            Index corresponding to the forecast horizon.
+        Number of forecast periods.
+
+        **future_index : pd.DatetimeIndex**
+
+        Index corresponding to the forecast horizon.
 
         Returns
         -------
-        np.ndarray
-            Forecasted values.
+        **np.ndarray**
+
+        Forecasted values.
 
         Raises
         ------
-        ValueError
-            If the model has not been fitted.
+        **ValueError**
+
+        If the model has not been fitted.
 
         Notes
         -----
         * Trend extrapolation uses simple linear regression (polyfit).
+
         * Seasonal factors are repeated according to the seasonal period.
         """
 
@@ -296,17 +318,19 @@ class SeriesDecomposition:
 
         Parameters
         ----------
-        values : np.ndarray
-            Deseasonalized values.
+        **values : np.ndarray**
+
+        Deseasonalized values.
 
         Returns
         -------
-        np.ndarray
-            LOESS-smoothed trend.
+        **np.ndarray**
+
+        LOESS-smoothed trend.
 
         Notes
         -----
-        Uses ``statsmodels.nonparametric.lowess`` with ``return_sorted=False``.
+        Uses `statsmodels.nonparametric.loess` with `return_sorted=False`.
         """
 
         t = np.arange(len(values))
@@ -325,16 +349,19 @@ class SeriesDecomposition:
 
         Parameters
         ----------
-        detrended : np.ndarray
-            Values with trend removed.
+        **detrended : np.ndarray**
 
-        seasonal_index : np.ndarray
-            Integer seasonal index for each timestamp.
+        Values with trend removed.
+
+        **seasonal_index : np.ndarray**
+
+        Integer seasonal index for each timestamp.
 
         Returns
         -------
-        np.ndarray
-            Normalized seasonal cycle of length ``period``.
+        **np.ndarray**
+
+        Normalized seasonal cycle of length `period`.
 
         Notes
         -----
@@ -355,26 +382,30 @@ class SeriesDecomposition:
 
         Parameters
         ----------
-        index : pd.DatetimeIndex
-            Timestamp index.
+        **index : pd.DatetimeIndex**
+
+        Timestamp index.
 
         Returns
         -------
-        np.ndarray
-            Integer seasonal index for each timestamp.
+        **np.ndarray**
+
+        Integer seasonal index for each timestamp.
 
         Raises
         ------
-        ValueError
-            If the seasonal period is unsupported.
+        **ValueError**
+
+        If the seasonal period is unsupported.
 
         Notes
         -----
         Supported mappings:
-            * 24 → hour of day
-            * 7  → day of week
-            * 52 → ISO week of year (0-51)
-            * 12 → month of year (0-11)
+
+        * 24, hour of day
+        * 7, day of week
+        * 52, ISO week of year (0-51)
+        * 12, month of year (0-11)
         """
 
         if self.period == 24:

@@ -1,17 +1,72 @@
 
-# lumen/plotter.py
+"""
+Plotting utilities built on top of Altair.
 
-# lumen/plotter.py
+This module defines the `Plotter` class, which provides a unified interface
+for generating a wide range of diagnostic and exploratory time-series
+visualizations. It standardizes figure dimensions, manages an optional
+output directory, and wraps Altair chart construction for consistency
+across plots.
+"""
 
 import altair as alt
 import pandas as pd
 import numpy as np
 from pathlib import Path
 
-
 class Plotter:
 
+    """A convenience wrapper for creating and saving Altair charts.
+
+    The `Plotter` class centralizes common plotting configuration such as
+    default figure size, pixel conversion, and output directory management.
+    It provides a suite of visualization methods for decomposition,
+    seasonality, residuals, anomalies, forecast comparison, and diagnostic
+    metrics.
+
+    Attributes
+    ----------
+    
+    **save_dir : Path | None**
+     
+    Directory where generated charts will be saved. If None, charts are not written to disk.
+    
+    **width_px : int** 
+    
+    Default chart width in pixels.
+    
+    **height_px : int**
+     
+    Default chart height in pixels.
+    """
+
     def __init__(self, save_dir=None, width=12, height=6):
+
+        """
+        Create a new `Plotter`.
+
+        Parameters
+        ----------
+        **save_dir : str | Path | None**
+         
+        Optional path to a directory where charts should be saved. If provided, the directory
+        is created if it does not already exist.
+
+        **width : int**
+        
+        Default width in inches for charts.
+
+        **height : int** 
+        
+        Default height in inches for charts.
+
+        Raises
+        ------
+        **OSError**
+        
+        If the save directory cannot be created.
+        """
+
         self.save_dir = Path(save_dir) if save_dir else None
         if self.save_dir:
             self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -21,12 +76,58 @@ class Plotter:
         self.height_px = int(height * 80)
 
     def _save(self, chart, filename):
+
+        """
+        Save a chart to disk if a save directory is configured.
+
+        Parameters
+        ----------
+        **chart : alt.Chart** 
+        
+        The Altair chart to save.
+
+        **filename : str** 
+        
+        Name of the output file.
+
+        Notes
+        -----
+        
+        If no save directory is set, this method does nothing.
+        """
+
         if self.save_dir:
             chart.save(str(self.save_dir / filename))
 
-    # ---------------- Decomposition ----------------
-
     def plot_decomposition(self, series, trend, fitted, filename="decomposition.png"):
+
+        """
+        Plot actual, trend, and fitted components of a decomposition.
+
+        Parameters
+        ----------
+        **series : pd.Series**
+         
+        Original time series.
+        
+        **trend : pd.Series** 
+        
+        Trend component.
+        
+        **fitted : pd.Series** 
+        
+        Fitted values from the model.
+        **filename : str** 
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart** 
+        
+        The generated decomposition chart.
+        """
+
         df = pd.DataFrame({
             "date": series.index,
             "Actual": np.asarray(series.values).ravel(),
@@ -53,9 +154,28 @@ class Plotter:
         self._save(chart, filename)
         return chart
 
-    # ---------------- Seasonal ----------------
-
     def plot_seasonal_cycle(self, seasonal_cycle, filename="seasonal_cycle.png"):
+
+        """
+        Plot a single seasonal cycle.
+
+        Parameters
+        ----------
+        **seasonal_cycle : array-like** 
+        
+        Seasonal factors for one cycle.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The seasonal cycle chart.
+        """
+
         vals = np.asarray(seasonal_cycle).ravel()
         df = pd.DataFrame({
             "index": range(len(vals)),
@@ -80,6 +200,31 @@ class Plotter:
         return chart
 
     def plot_seasonal_factors_over_time(self, series, seasonal_factors_full, filename="seasonal_factors_over_time.png"):
+
+        """
+        Plot seasonal factors aligned with the time index.
+
+        Parameters
+        ----------
+        **series : pd.Series** 
+        
+        Original time series (for index).
+        
+        **seasonal_factors_full : pd.Series**
+        
+        Full seasonal factors.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The seasonal factors chart.
+        """
+
         df = pd.DataFrame({
             "date": series.index,
             "value": np.asarray(seasonal_factors_full.values).ravel()
@@ -102,9 +247,28 @@ class Plotter:
         self._save(chart, filename)
         return chart
 
-    # ---------------- Residuals ----------------
-
     def plot_residuals(self, residuals, filename="residuals.png"):
+
+        """
+        Plot residuals over time.
+
+        Parameters
+        ----------
+        **residuals : pd.Series**
+        
+        Model residuals.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The residual time-series chart.
+        """
+
         df = pd.DataFrame({
             "date": residuals.index,
             "value": np.asarray(residuals.values).ravel()
@@ -128,6 +292,27 @@ class Plotter:
         return chart
 
     def plot_residual_distribution(self, residuals, filename="residual_distribution.png"):
+
+        """
+        Plot a histogram of residuals.
+
+        Parameters
+        ----------
+        **residuals : pd.Series**
+        
+        Model residuals.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The residual distribution chart.
+        """
+
         df = pd.DataFrame({"value": np.asarray(residuals.values).ravel()})
 
         chart = (
@@ -148,6 +333,26 @@ class Plotter:
         return chart
 
     def plot_residual_zscores(self, diagnostics, filename="residual_zscores.png"):
+
+        """
+        Plot z-scores of residuals with threshold lines.
+
+        Parameters
+        ----------
+        **diagnostics**
+         
+           Object containing residuals and configuration.
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The z-score chart with threshold rules.
+        """
+
         r = diagnostics.residuals
         r_vals = np.asarray(r.values).ravel()
         z = (r_vals - r_vals.mean()) / (r_vals.std() + 1e-8)
@@ -173,6 +378,27 @@ class Plotter:
         return final
 
     def plot_anomalies(self, diagnostics, filename="anomalies.png"):
+
+        """
+        Plot detected anomalies as red points.
+
+        Parameters
+        ----------
+        **diagnostics**
+        
+        Object containing anomaly information.
+
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart | None**
+        
+        The anomaly chart, or None if no anomalies exist.
+        """
+
         if diagnostics.anomalies is None or diagnostics.anomalies.empty:
             return None
 
@@ -195,9 +421,28 @@ class Plotter:
         self._save(chart, filename)
         return chart
 
-    # ---------------- Continuity & errors ----------------
-
     def plot_continuity(self, diagnostics, filename="continuity.png"):
+
+        """
+        Plot continuity between last history point and first forecast.
+
+        Parameters
+        ----------
+        **diagnostics**
+        
+        Object containing continuity report.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart | None**
+        
+        The continuity chart, or None if unavailable.
+        """
+
         report = diagnostics.continuity_report
         if not report:
             return None
@@ -242,8 +487,28 @@ class Plotter:
         
         return final
 
-
     def plot_error_metrics(self, diagnostics, filename="error_metrics.png"):
+
+        """
+        Plot error metrics as a bar chart.
+
+        Parameters
+        ----------
+        **diagnostics**
+        
+        Object containing error metrics.
+
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The error metrics chart.
+        """
+
         metrics = diagnostics.error_metrics
 
         df = pd.DataFrame({
@@ -265,9 +530,36 @@ class Plotter:
         self._save(chart, filename)
         return chart
 
-    # ---------------- Forecast vs actual ----------------
-
     def plot_forecast_vs_actual(self, history, forecast, future_index, filename="forecast_vs_actual.png"):
+
+        """
+        Plot actual history and forecasted values together.
+
+        Parameters
+        ----------
+        **history : pd.Series**
+        
+        Historical values.
+        
+        **forecast : array-like**
+        
+        Forecasted values.
+        
+        **future_index : pd.Index**
+        
+        Index for forecast horizon.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart**
+        
+        The forecast vs actual chart.
+        """
+
         hist_vals = np.asarray(history.values).ravel()
         fc_vals = np.asarray(forecast).ravel()
 
@@ -293,9 +585,28 @@ class Plotter:
         self._save(chart, filename)
         return chart
 
-    # ---------------- Strength & variance ----------------
-
     def plot_strength_bars(self, diagnostics, filename="strength_bars.png"):
+
+        """
+        Plot trend and seasonal strength values.
+
+        Parameters
+        ----------
+        **diagnostics**
+        
+        Object containing strength metrics.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart | None**
+        
+        The strength bar chart, or None if diagnostics missing.
+        """
+
         if diagnostics is None:
             return None
 
@@ -320,6 +631,27 @@ class Plotter:
         return chart
 
     def plot_variance_contributions(self, diagnostics, filename="variance_contributions.png"):
+
+        """
+        Plot variance contributions of trend, seasonality, and residuals.
+
+        Parameters
+        ----------
+        **diagnostics**
+        
+        Object containing decomposition components.
+        
+        **filename : str**
+        
+        Output filename.
+
+        Returns
+        -------
+        **alt.Chart | None**
+        
+        The variance contribution chart, or None if diagnostics missing.
+        """
+
         if diagnostics is None:
             return None
 
@@ -352,8 +684,6 @@ class Plotter:
         self._save(chart, filename)
         return chart
 
-    # ---------------- Orchestrator ----------------
-
     def plot_all(
         self, 
         series, 
@@ -363,6 +693,41 @@ class Plotter:
         diagnostics=None,
         prefix=None
     ):
+        
+        """
+        Generate all available plots for a model and its diagnostics.
+
+        Parameters
+        ----------
+        **series : pd.Series**
+        
+        Original time series.
+
+        **model**
+        
+        Fitted model object with trend_, fitted_, residual_, seasonal_factors, and seasonal_factors_ attributes.
+        
+        **forecast : array-like | None**
+        
+        Forecasted values.
+        
+        **future_index : pd.Index | None**
+        
+        Index for forecast horizon.
+        **diagnostics : object | None**
+        
+        Diagnostics object containing residuals, anomalies, continuity report, and metrics.
+        
+        **prefix : str | None**
+        
+        Optional prefix for output filenames.
+
+        Notes
+        -----
+        This method orchestrates the full suite of visualizations,
+        saving each one with a numbered filename for easy browsing.
+        """
+    
         prefix = f"{prefix}_" if prefix else ""
 
         self.plot_decomposition(series, model.trend_, model.fitted_, f"{prefix}01_decomposition.png")
